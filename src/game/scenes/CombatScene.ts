@@ -34,6 +34,10 @@ export class CombatScene extends Phaser.Scene {
   private endPanel!: Phaser.GameObjects.Container;
   private almanacPanel!: Phaser.GameObjects.Container;
   private almanacOpen = false;
+  /** Explicit pause menu (PAUSE / Esc), not Almanac soft-pause. */
+  private pauseMenuOpen = false;
+  /** True when Almanac froze combat and should resume on close. */
+  private almanacHeldCombat = false;
 
   constructor() {
     super('Combat');
@@ -181,7 +185,7 @@ export class CombatScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const resume = this.makeButton(arena.width / 2, arena.height * 0.48, 'RESUME', () => {
-      if (this.run.getPhase() === 'paused') this.run.togglePause();
+      this.closePauseMenu();
     });
     const restart = this.makeButton(arena.width / 2, arena.height * 0.56, 'RESTART', () => this.restartRun());
     const toMenu = this.makeButton(arena.width / 2, arena.height * 0.64, 'MAIN MENU', () => {
@@ -256,18 +260,51 @@ export class CombatScene extends Phaser.Scene {
       this.toggleAlmanac(false);
       return;
     }
-    this.run.togglePause();
+    if (this.pauseMenuOpen) {
+      this.closePauseMenu();
+      return;
+    }
+    this.openPauseMenu();
+  }
+
+  private openPauseMenu(): void {
+    if (this.run.getPhase() === 'combat') {
+      this.run.togglePause();
+    }
+    this.pauseMenuOpen = true;
+  }
+
+  private closePauseMenu(): void {
+    if (this.pauseMenuOpen && this.run.getPhase() === 'paused' && !this.almanacHeldCombat) {
+      this.run.togglePause();
+    }
+    this.pauseMenuOpen = false;
   }
 
   private toggleAlmanac(force?: boolean): void {
-    this.almanacOpen = force ?? !this.almanacOpen;
-    this.almanacPanel.setVisible(this.almanacOpen);
-    this.platform.audio.play(this.almanacOpen ? 'almanac_open' : 'almanac_close');
-    if (this.almanacOpen && this.run.getPhase() === 'combat') {
+    const opening = force ?? !this.almanacOpen;
+    if (opening === this.almanacOpen) {
+      if (opening) this.almanacPanel.setVisible(true);
+      return;
+    }
+
+    this.almanacOpen = opening;
+    this.almanacPanel.setVisible(opening);
+    this.platform.audio.play(opening ? 'almanac_open' : 'almanac_close');
+
+    if (opening) {
+      // Soft-pause combat only; do not open the pause menu overlay.
+      if (this.run.getPhase() === 'combat') {
+        this.run.togglePause();
+        this.almanacHeldCombat = true;
+      }
+      return;
+    }
+
+    // Closing the book resumes combat if Almanac was what froze it.
+    if (this.almanacHeldCombat && this.run.getPhase() === 'paused') {
       this.run.togglePause();
-    } else if (!this.almanacOpen && this.run.getPhase() === 'paused') {
-      // leave paused if user opened from pause; if opened from combat we paused — resume
-      // Only auto-resume when we were in combat before opening.
+      this.almanacHeldCombat = false;
     }
   }
 
@@ -364,7 +401,7 @@ export class CombatScene extends Phaser.Scene {
       this.levelUpPanel.removeAll(true);
     }
 
-    this.pausePanel.setVisible(phase === 'paused' && !this.almanacOpen);
+    this.pausePanel.setVisible(this.pauseMenuOpen && !this.almanacOpen);
 
     if (phase === 'victory' || phase === 'defeat') {
       if (!this.endPanel.visible) {
@@ -421,6 +458,7 @@ export class CombatScene extends Phaser.Scene {
         if (this.run.getPhase() !== 'levelup') return;
         this.run.chooseUpgrade(up.id as UpgradeId);
         this.almanacOpen = false;
+        this.almanacHeldCombat = false;
         this.almanacPanel.setVisible(false);
       });
       cards.push(card, name, desc);
@@ -483,6 +521,8 @@ export class CombatScene extends Phaser.Scene {
 
   private restartRun(): void {
     this.almanacOpen = false;
+    this.almanacHeldCombat = false;
+    this.pauseMenuOpen = false;
     for (const view of this.enemyViews.values()) view.root.destroy(true);
     this.enemyViews.clear();
     for (const view of this.projectileViews.values()) view.sprite.destroy();
