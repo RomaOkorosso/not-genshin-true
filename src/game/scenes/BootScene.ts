@@ -13,7 +13,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   private generateTextures(): void {
-    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.setVisible(false);
 
     // Arena grass
     g.fillStyle(0x3d6b3a, 1);
