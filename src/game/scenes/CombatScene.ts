@@ -8,14 +8,17 @@ import {
   UI_FONT_DISPLAY,
 } from '../../ui/fonts';
 import { ARCHER_BASELINE } from '../balance/archer';
+import { ENEMY_DEFS, type EnemyId } from '../balance/enemies';
 import type { UpgradeDef, UpgradeId } from '../balance/upgrades';
 import {
-  CODEX_SECTIONS,
+  getCodexSections,
   pagesForSection,
   type CodexPage,
   type CodexSectionId,
 } from '../content/codex';
-import { getLevelDef, isLevelId, type LevelId } from '../content/levels';
+import { isLevelId, type LevelId } from '../content/levels';
+import { levelName, upgradeDescription, upgradeDisplayName } from '../localization/content';
+import { t } from '../localization/i18n';
 
 /** Keep world sprites below HUD/overlays even with y-sorting. */
 const DEPTH = {
@@ -65,6 +68,7 @@ export class CombatScene extends Phaser.Scene {
   private almanacOpen = false;
   private pauseMenuOpen = false;
   private almanacHeldCombat = false;
+  private almanacReturnToPause = false;
   private codexSection: CodexSectionId = 'mechanics';
   private almanacTabs: Phaser.GameObjects.Text[] = [];
   private almanacScrollContent!: Phaser.GameObjects.Container;
@@ -77,8 +81,12 @@ export class CombatScene extends Phaser.Scene {
   private hitSparkIds = new Set<number>();
   private ultimateBtn!: Phaser.GameObjects.Text;
   private ultimateCdFill!: Phaser.GameObjects.Rectangle;
+  private skipWaitBtn!: Phaser.GameObjects.Text;
+  private codexPlate!: Phaser.GameObjects.Arc;
+  private hudBarWidth = 200;
   private activeVfx = 0;
   private readonly maxVfx = 24;
+  private readonly codexBtnSize = 48;
 
   constructor() {
     super('Combat');
@@ -153,42 +161,53 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private createHud(arena: { width: number }): void {
-    const top = 18;
+    const top = 12;
     const hud = DEPTH.hud;
-    this.add.rectangle(arena.width / 2, 56, arena.width - 24, 96, 0x0d1610, 0.82).setDepth(hud);
+    const barLeft = 28;
+    this.hudBarWidth = Math.min(220, arena.width * 0.38);
+    this.add.rectangle(arena.width / 2, 48, arena.width - 16, 80, 0x0d1610, 0.9).setDepth(hud);
 
-    // Label above the tower HP bar
     this.towerHpText = this.add
-      .text(40, top, 'Tower 100 / 100', {
+      .text(barLeft, top, t('ui.towerHp', { hp: 100, max: 100 }), {
         fontFamily: UI_FONT_BODY,
-        fontSize: '16px',
+        fontSize: '14px',
         fontStyle: '700',
         color: '#ffcdd2',
       })
       .setDepth(hud + 2);
 
     this.add
-      .rectangle(40, top + 26, 200, 14, 0x333333)
+      .rectangle(barLeft, top + 22, this.hudBarWidth, 12, 0x333333)
       .setOrigin(0, 0.5)
       .setDepth(hud + 1);
     this.towerHpBar = this.add
-      .rectangle(40, top + 26, 200, 14, 0xe53935)
+      .rectangle(barLeft, top + 22, this.hudBarWidth, 12, 0xe53935)
       .setOrigin(0, 0.5)
       .setDepth(hud + 2);
 
     this.add
-      .rectangle(40, top + 48, 200, 10, 0x333333)
+      .rectangle(barLeft, top + 40, this.hudBarWidth, 9, 0x333333)
       .setOrigin(0, 0.5)
       .setDepth(hud + 1);
     this.xpBar = this.add
-      .rectangle(40, top + 48, 0, 10, 0xffeb3b)
+      .rectangle(barLeft, top + 40, 0, 9, 0xffeb3b)
       .setOrigin(0, 0.5)
       .setDepth(hud + 2);
 
+    this.killText = this.add
+      .text(arena.width / 2, top + 8, t('ui.kills', { count: 0 }), {
+        fontFamily: UI_FONT_BODY,
+        fontSize: '14px',
+        fontStyle: '700',
+        color: '#c8e6c9',
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(hud + 2);
+
     this.levelText = this.add
-      .text(arena.width - 40, top, 'Lv 1', {
+      .text(arena.width - 28, top, 'Lv 1', {
         fontFamily: UI_FONT_DISPLAY,
-        fontSize: '20px',
+        fontSize: '16px',
         fontStyle: '800',
         color: '#e8f5e9',
       })
@@ -196,27 +215,33 @@ export class CombatScene extends Phaser.Scene {
       .setDepth(hud + 2);
 
     this.timerText = this.add
-      .text(arena.width - 40, top + 28, '0:00', {
+      .text(arena.width - 28, top + 24, '0:00', {
         fontFamily: UI_FONT_BODY,
-        fontSize: '16px',
+        fontSize: '14px',
         fontStyle: '700',
         color: '#a5d6a7',
       })
       .setOrigin(1, 0)
       .setDepth(hud + 2);
 
-    this.killText = this.add
-      .text(arena.width / 2, top + 8, 'Kills 0', {
-        fontFamily: UI_FONT_BODY,
-        fontSize: '16px',
-        fontStyle: '700',
-        color: '#c8e6c9',
-      })
-      .setOrigin(0.5)
-      .setDepth(hud + 2);
+    // Almanac + Pause sit below the stats strip so nothing overlaps HUD text
+    const rowY = 108;
+    const codexX = 40;
+    this.codexPlate = this.add
+      .circle(codexX, rowY + 8, 30, 0xffe082, 1)
+      .setStrokeStyle(3, 0xfff8e1)
+      .setDepth(hud + 4)
+      .setInteractive({ useHandCursor: true });
+    this.codexPlate.on('pointerup', () => this.toggleAlmanac());
+    this.codexBtn = this.add
+      .image(codexX, rowY + 8, 'codex_btn')
+      .setDepth(hud + 5)
+      .setDisplaySize(this.codexBtnSize, this.codexBtnSize)
+      .setInteractive({ useHandCursor: true });
+    this.codexBtn.on('pointerup', () => this.toggleAlmanac());
 
     const pauseBtn = this.add
-      .text(arena.width - 40, 118, 'PAUSE', {
+      .text(arena.width - 28, rowY, t('ui.pause'), {
         fontFamily: UI_FONT_DISPLAY,
         fontSize: '16px',
         fontStyle: '800',
@@ -229,12 +254,23 @@ export class CombatScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     pauseBtn.on('pointerup', () => this.onPausePressed());
 
-    this.codexBtn = this.add
-      .image(56, 130, 'codex_btn')
-      .setDepth(hud + 5)
-      .setDisplaySize(52, 58)
+    this.skipWaitBtn = this.add
+      .text(arena.width / 2, 1120, t('ui.skipWait'), {
+        fontFamily: UI_FONT_DISPLAY,
+        fontStyle: '800',
+        fontSize: '18px',
+        color: '#1b1208',
+        backgroundColor: '#ffe082',
+        padding: { x: 18, y: 12 },
+      })
+      .setOrigin(0.5)
+      .setDepth(hud + 6)
+      .setVisible(false)
       .setInteractive({ useHandCursor: true });
-    this.codexBtn.on('pointerup', () => this.toggleAlmanac());
+    this.skipWaitBtn.on('pointerup', () => {
+      if (this.almanacOpen || this.pauseMenuOpen) return;
+      this.run.trySkipWait();
+    });
 
     const ultX = arena.width - 88;
     const ultY = 1180;
@@ -247,7 +283,7 @@ export class CombatScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(hud + 5);
     this.ultimateBtn = this.add
-      .text(ultX, ultY, 'ULTIMATE', {
+      .text(ultX, ultY, t('ui.ultimate'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '16px',
@@ -271,24 +307,39 @@ export class CombatScene extends Phaser.Scene {
     this.almanacPanel = this.add.container(0, 0).setVisible(false);
     this.overlayRoot.add([this.levelUpPanel, this.pausePanel, this.endPanel, this.almanacPanel]);
 
-    // Pause
-    const pBg = this.add.rectangle(arena.width / 2, arena.height / 2, arena.width, arena.height, 0x000000, 0.55);
+    // Pause — buttons in upper half so they don't sit on the tower sprite
+    const pBg = this.add.rectangle(
+      arena.width / 2,
+      arena.height / 2,
+      arena.width,
+      arena.height,
+      0x000000,
+      0.62,
+    );
     const pTitle = this.add
-      .text(arena.width / 2, arena.height * 0.35, 'PAUSED', {
+      .text(arena.width / 2, arena.height * 0.22, t('ui.paused'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
-        fontSize: '42px',
+        fontSize: '40px',
         color: '#fffde7',
       })
       .setOrigin(0.5);
-    const resume = this.makeButton(arena.width / 2, arena.height * 0.48, 'RESUME', () => {
+    const resume = this.makeButton(arena.width / 2, arena.height * 0.34, t('ui.resume'), () => {
       this.closePauseMenu();
     });
-    const restart = this.makeButton(arena.width / 2, arena.height * 0.56, 'RESTART', () => this.restartRun());
-    const toSelect = this.makeButton(arena.width / 2, arena.height * 0.64, 'LEVEL SELECT', () => {
+    const almanac = this.makeButton(arena.width / 2, arena.height * 0.42, t('ui.almanac'), () => {
+      this.almanacReturnToPause = true;
+      this.pauseMenuOpen = false;
+      this.pausePanel.setVisible(false);
+      this.toggleAlmanac(true);
+    });
+    const restart = this.makeButton(arena.width / 2, arena.height * 0.5, t('ui.restart'), () =>
+      this.restartRun(),
+    );
+    const toSelect = this.makeButton(arena.width / 2, arena.height * 0.58, t('ui.levelSelect'), () => {
       this.scene.start('LevelSelect', { platform: this.platform });
     });
-    this.pausePanel.add([pBg, pTitle, resume, restart, toSelect]);
+    this.pausePanel.add([pBg, pTitle, resume, almanac, restart, toSelect]);
 
     this.buildAlmanacOverlay(arena.width, arena.height);
   }
@@ -305,7 +356,7 @@ export class CombatScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x8d6e63);
 
     const aTitle = this.add
-      .text(panelX, panelY - panelH / 2 + 36, 'ALMANAC', {
+      .text(panelX, panelY - panelH / 2 + 36, t('ui.almanac'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: `${ALMANAC_TYPE.titlePx}px`,
@@ -317,11 +368,12 @@ export class CombatScene extends Phaser.Scene {
     const tabGap = 10;
     const tabAreaLeft = panelX - panelW / 2 + padX;
     const tabAreaWidth = panelW - padX * 2;
-    const tabWidth = (tabAreaWidth - tabGap * (CODEX_SECTIONS.length - 1)) / CODEX_SECTIONS.length;
+    const sections = getCodexSections();
+    const tabWidth = (tabAreaWidth - tabGap * (sections.length - 1)) / sections.length;
 
     this.almanacTabs = [];
     const tabObjects: Phaser.GameObjects.GameObject[] = [aBg, aTitle];
-    CODEX_SECTIONS.forEach((sec, i) => {
+    sections.forEach((sec, i) => {
       const tabX = tabAreaLeft + tabWidth * i + tabGap * i + tabWidth / 2;
       const tabPadY = Math.max(
         18,
@@ -403,7 +455,7 @@ export class CombatScene extends Phaser.Scene {
       this.almanacDragLastY = null;
     });
 
-    const aClose = this.makeButton(panelX, closeY, 'CLOSE BOOK', () => this.toggleAlmanac(false));
+    const aClose = this.makeButton(panelX, closeY, t('ui.closeBook'), () => this.toggleAlmanac(false));
     tabObjects.push(this.almanacScrollContent, scrollHit, aClose);
     this.almanacPanel.add(tabObjects);
 
@@ -412,8 +464,9 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private syncAlmanacTabStyles(): void {
+    const sections = getCodexSections();
     this.almanacTabs.forEach((tab, i) => {
-      const active = CODEX_SECTIONS[i]?.id === this.codexSection;
+      const active = sections[i]?.id === this.codexSection;
       tab.setStyle({
         backgroundColor: active ? '#ffe082' : '#5d4037',
         color: active ? '#1b1208' : '#ffe0b2',
@@ -470,7 +523,7 @@ export class CombatScene extends Phaser.Scene {
     if (page.requires) {
       cursor += ALMANAC_TYPE.bodyToMetaGap;
       const req = this.add
-        .text(0, cursor, `Requires: ${page.requires}`, {
+        .text(0, cursor, t('ui.requires', { list: page.requires }), {
           fontFamily: UI_FONT_BODY,
           fontStyle: 'normal',
           fontSize: `${ALMANAC_TYPE.metaPx}px`,
@@ -520,13 +573,13 @@ export class CombatScene extends Phaser.Scene {
     if (!this.tryBeginVfx()) return;
     const key = this.textures.exists('hit_spark') ? 'hit_spark' : undefined;
     const spark = key
-      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(22, 22)
-      : this.add.circle(x, y, 6, 0xfff59d, 0.9).setDepth(DEPTH.projectile + 1);
+      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(14, 14)
+      : this.add.circle(x, y, 5, 0xfff59d, 0.9).setDepth(DEPTH.projectile + 1);
     this.tweens.add({
       targets: spark,
-      scale: 2.2,
+      scale: 1.6,
       alpha: 0,
-      duration: 180,
+      duration: 160,
       onComplete: () => {
         spark.destroy();
         this.endVfx();
@@ -536,12 +589,12 @@ export class CombatScene extends Phaser.Scene {
 
   private spawnCritSpark(x: number, y: number): void {
     if (!this.tryBeginVfx()) return;
-    const spark = this.add.circle(x, y, 10, 0xffab00, 0.95).setDepth(DEPTH.projectile + 2);
+    const spark = this.add.circle(x, y, 7, 0xffab00, 0.95).setDepth(DEPTH.projectile + 2);
     this.tweens.add({
       targets: spark,
-      scale: 2.8,
+      scale: 1.8,
       alpha: 0,
-      duration: 240,
+      duration: 200,
       onComplete: () => {
         spark.destroy();
         this.endVfx();
@@ -553,14 +606,14 @@ export class CombatScene extends Phaser.Scene {
     if (!this.tryBeginVfx()) return;
     const key = this.textures.exists('death_puff') ? 'death_puff' : undefined;
     const puff = key
-      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(36, 28)
-      : this.add.circle(x, y, 14, 0x8d6e63, 0.85).setDepth(DEPTH.projectile + 1);
+      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(14, 10)
+      : this.add.circle(x, y, 6, 0x8d6e63, 0.85).setDepth(DEPTH.projectile + 1);
     this.tweens.add({
       targets: puff,
-      y: y - 18,
-      scale: 1.6,
+      y: y - 10,
+      scale: 1.25,
       alpha: 0,
-      duration: 320,
+      duration: 240,
       onComplete: () => {
         puff.destroy();
         this.endVfx();
@@ -689,6 +742,11 @@ export class CombatScene extends Phaser.Scene {
       this.run.togglePause();
       this.almanacHeldCombat = false;
     }
+    // Opened from pause menu → return to pause overlay (stay paused).
+    if (this.almanacReturnToPause) {
+      this.almanacReturnToPause = false;
+      this.pauseMenuOpen = true;
+    }
   }
 
   private syncViews(): void {
@@ -702,6 +760,9 @@ export class CombatScene extends Phaser.Scene {
         this.enemyViews.set(e.id, view);
       }
       view.root.setPosition(e.x, e.y);
+      // Extracted sprites face right; face the tower while approaching.
+      const cx = this.run.getArena().centerX;
+      view.sprite.setFlipX(e.x > cx);
       const arenaH = this.run.getArena().height;
       const ySort = Math.min(
         DEPTH.enemySpan,
@@ -767,12 +828,17 @@ export class CombatScene extends Phaser.Scene {
       stone_golem: 'enemy_stone_golem',
     };
     const key = keyMap[defId] ?? 'enemy_grunt';
+    const def = ENEMY_DEFS[defId as EnemyId];
+    // Hit radius ~12 for grunt → ~38px tall; elites/boss stay readable.
+    const targetH = Math.round(Math.min(64, Math.max(32, (def?.radius ?? 12) * 3.15)));
     const sprite = this.add.image(0, 0, key);
-    const barY = -sprite.height * 0.58;
+    const aspect = sprite.width > 0 ? sprite.height / sprite.width : 1;
+    sprite.setDisplaySize(Math.round(targetH / aspect), targetH);
+    const barY = -targetH * 0.58;
     const hpBarBg = this.add.rectangle(0, barY, 32, 6, 0x111111).setStrokeStyle(1, 0xffffff, 0.35);
     const hpBar = this.add.rectangle(-16, barY, 32, 6, 0x00e676).setOrigin(0, 0.5);
     const windup = this.add
-      .arc(0, 0, sprite.width * 0.55, 0, 0, false, 0xff6d00, 0.45)
+      .arc(0, 0, targetH * 0.55, 0, 0, false, 0xff6d00, 0.45)
       .setVisible(false);
     const root = this.add.container(0, 0, [windup, sprite, hpBarBg, hpBar]);
     return { root, sprite, hpBarBg, hpBar, windup };
@@ -781,17 +847,23 @@ export class CombatScene extends Phaser.Scene {
   private syncHud(): void {
     const snap = this.run.snapshot();
     const hpRatio = snap.towerMaxHp > 0 ? snap.towerHp / snap.towerMaxHp : 0;
-    this.towerHpBar.width = 200 * hpRatio;
-    this.towerHpText.setText(`Tower ${Math.ceil(snap.towerHp)} / ${snap.towerMaxHp}`);
+    this.towerHpBar.width = this.hudBarWidth * hpRatio;
+    this.towerHpText.setText(
+      t('ui.towerHp', { hp: Math.ceil(snap.towerHp), max: snap.towerMaxHp }),
+    );
     const xpRatio = snap.xpToNext > 0 ? snap.xp / snap.xpToNext : 0;
-    this.xpBar.width = 200 * xpRatio;
-    this.levelText.setText(`L${snap.levelId} · Lv ${snap.heroLevel}`);
+    this.xpBar.width = this.hudBarWidth * xpRatio;
+    this.levelText.setText(
+      t('ui.levelHud', { levelId: snap.levelId, heroLevel: snap.heroLevel }),
+    );
     this.timerText.setText(formatTime(snap.elapsedMs));
-    this.killText.setText(`Kills ${snap.killCount}`);
-    if (this.codexBtn) {
-      const pulse = snap.evolutionAvailable ? 1 + Math.sin(this.time.now / 200) * 0.08 : 1;
-      this.codexBtn.setScale(pulse);
-      this.codexBtn.setTint(snap.evolutionAvailable ? 0xffecb3 : 0xffffff);
+    this.killText.setText(t('ui.kills', { count: snap.killCount }));
+    if (this.codexBtn && this.codexPlate) {
+      const pulse = snap.evolutionAvailable ? 1 + Math.sin(this.time.now / 180) * 0.1 : 1;
+      this.codexPlate.setScale(pulse);
+      this.codexPlate.setFillStyle(snap.evolutionAvailable ? 0xffecb3 : 0xffe082, 1);
+      this.codexBtn.setDisplaySize(this.codexBtnSize, this.codexBtnSize);
+      this.codexBtn.setTint(0xffffff);
     }
     if (this.ultimateBtn && this.ultimateCdFill) {
       const max = snap.ultimateCooldownMax || 1;
@@ -801,7 +873,14 @@ export class CombatScene extends Phaser.Scene {
       this.ultimateCdFill.width = fillW;
       this.ultimateCdFill.setFillStyle(ready ? 0x2e7d32 : 0x5d4037, 0.9);
       this.ultimateBtn.setAlpha(ready ? 1 : 0.55);
-      this.ultimateBtn.setText(ready ? 'ULTIMATE' : `${Math.ceil(rem)}s`);
+      this.ultimateBtn.setText(
+        ready ? t('ui.ultimate') : t('ui.ultimateCd', { sec: Math.ceil(rem) }),
+      );
+    }
+    if (this.skipWaitBtn) {
+      const show =
+        snap.canSkipWait && !this.almanacOpen && !this.pauseMenuOpen && snap.phase === 'combat';
+      this.skipWaitBtn.setVisible(show);
     }
   }
 
@@ -833,7 +912,7 @@ export class CombatScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
     const title = this.add
-      .text(width / 2, height * 0.16, 'LEVEL UP — Choose 1', {
+      .text(width / 2, height * 0.16, t('ui.levelUp'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '30px',
@@ -856,8 +935,9 @@ export class CombatScene extends Phaser.Scene {
         .rectangle(width / 2, y, width * 0.8, 100, isEvo ? 0x4a148c : 0x1b5e20, 0.96)
         .setStrokeStyle(3, isEvo ? 0xffd54f : 0xa5d6a7)
         .setInteractive({ useHandCursor: true });
+      const displayName = upgradeDisplayName(up);
       const name = this.add
-        .text(width / 2, y - 24, isEvo ? `★ ${up.name}` : up.name, {
+        .text(width / 2, y - 24, isEvo ? `★ ${displayName}` : displayName, {
           fontFamily: UI_FONT_DISPLAY,
           fontStyle: '800',
           fontSize: isEvo ? '22px' : '20px',
@@ -865,7 +945,7 @@ export class CombatScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       const desc = this.add
-        .text(width / 2, y + 18, up.description, {
+        .text(width / 2, y + 18, upgradeDescription(up.id), {
           fontFamily: UI_FONT_BODY,
           fontStyle: 'normal',
           fontSize: '16px',
@@ -892,10 +972,11 @@ export class CombatScene extends Phaser.Scene {
   private showEnd(victory: boolean, towerHp: number, elapsedMs: number): void {
     this.endPanel.removeAll(true);
     const { width, height } = this.scale;
-    const def = getLevelDef(this.levelId);
+    const level = levelName(this.levelId);
+    const time = formatTime(elapsedMs);
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
     const title = this.add
-      .text(width / 2, height * 0.28, victory ? 'VICTORY' : 'DEFEAT', {
+      .text(width / 2, height * 0.28, victory ? t('ui.victory') : t('ui.defeat'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '48px',
@@ -907,8 +988,8 @@ export class CombatScene extends Phaser.Scene {
         width / 2,
         height * 0.38,
         victory
-          ? `${def.name}\nTower HP: ${Math.ceil(towerHp)} · Time: ${formatTime(elapsedMs)}`
-          : `${def.name}\nThe tower fell at ${formatTime(elapsedMs)}`,
+          ? t('ui.victoryDetail', { level, hp: Math.ceil(towerHp), time })
+          : t('ui.defeatDetail', { level, time }),
         {
           fontFamily: UI_FONT_BODY,
           fontStyle: 'normal',
@@ -924,7 +1005,7 @@ export class CombatScene extends Phaser.Scene {
     let y = 0.5;
     if (victory && this.levelId < 5) {
       items.push(
-        this.makeButton(width / 2, height * y, 'NEXT LEVEL', () => {
+        this.makeButton(width / 2, height * y, t('ui.nextLevel'), () => {
           this.scene.start('Combat', {
             platform: this.platform,
             levelId: (this.levelId + 1) as LevelId,
@@ -933,10 +1014,10 @@ export class CombatScene extends Phaser.Scene {
       );
       y += 0.09;
     }
-    items.push(this.makeButton(width / 2, height * y, 'PLAY AGAIN', () => this.restartRun()));
+    items.push(this.makeButton(width / 2, height * y, t('ui.playAgain'), () => this.restartRun()));
     y += 0.09;
     items.push(
-      this.makeButton(width / 2, height * y, 'LEVEL SELECT', () => {
+      this.makeButton(width / 2, height * y, t('ui.levelSelect'), () => {
         this.scene.start('LevelSelect', { platform: this.platform });
       }),
     );

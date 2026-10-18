@@ -31,6 +31,7 @@ export const DEFAULT_SAVE: SavePayload = {
   settings: {
     sfxVolume: 0.7,
     musicVolume: 0.5,
+    language: 'auto',
   },
   campaign: { ...DEFAULT_CAMPAIGN, cleared: {} },
 };
@@ -52,15 +53,20 @@ export function migrateSave(raw: unknown): SavePayload {
   const sfx = typeof settingsRaw.sfxVolume === 'number' ? clamp01(settingsRaw.sfxVolume) : 0.7;
   const music =
     typeof settingsRaw.musicVolume === 'number' ? clamp01(settingsRaw.musicVolume) : 0.5;
+  const language = migrateLanguage(settingsRaw.language);
 
   return {
     version: SAVE_VERSION,
     lastRunAt: typeof raw.lastRunAt === 'number' ? raw.lastRunAt : null,
     runsCompleted: sanitizeNonNegInt(raw.runsCompleted),
     bestTowerHpRemaining: sanitizeNonNegInt(raw.bestTowerHpRemaining),
-    settings: { sfxVolume: sfx, musicVolume: music },
+    settings: { sfxVolume: sfx, musicVolume: music, language },
     campaign: migrateCampaign(raw.campaign),
   };
+}
+
+function migrateLanguage(raw: unknown): 'auto' | 'en' | 'ru' {
+  return raw === 'en' || raw === 'ru' || raw === 'auto' ? raw : 'auto';
 }
 
 function migrateCampaign(raw: unknown): CampaignSave {

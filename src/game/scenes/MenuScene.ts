@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { getLanguageSetting, setLanguageSetting, t } from '../localization/i18n';
+import type { LanguageSetting } from '../localization/types';
 import type { PlatformBundle } from '../../platform/types';
 import { UI_FONT_BODY, UI_FONT_DISPLAY } from '../../ui/fonts';
 
@@ -24,7 +26,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     this.add
-      .text(width / 2, height * 0.18, 'NOT GENSHIN', {
+      .text(width / 2, height * 0.18, t('ui.brand'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '48px',
@@ -35,7 +37,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height * 0.26, 'Levels 1–5 · Vertical Slice', {
+      .text(width / 2, height * 0.26, t('ui.menuSubtitle'), {
         fontFamily: UI_FONT_BODY,
         fontStyle: '700',
         fontSize: '18px',
@@ -47,7 +49,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.image(width / 2, height * 0.36, 'archer').setScale(1.55);
 
     const play = this.add
-      .text(width / 2, height * 0.62, 'PLAY CAMPAIGN', {
+      .text(width / 2, height * 0.58, t('ui.playCampaign'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '700',
         fontSize: '26px',
@@ -65,21 +67,18 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start('LevelSelect', { platform: this.platform });
     });
 
+    this.addLangToggle(width, height * 0.68);
+
     this.add
-      .text(
-        width / 2,
-        height * 0.74,
-        'Almanac is available in-run (book button)\nArcher auto-attacks · Evolutions from Level 4',
-        {
-          fontFamily: UI_FONT_BODY,
-          fontStyle: 'normal',
-          fontSize: '16px',
-          color: '#c8e6c9',
-          align: 'center',
-          lineSpacing: 6,
-          wordWrap: { width: Math.min(520, width * 0.82) },
-        },
-      )
+      .text(width / 2, height * 0.78, t('ui.menuHint'), {
+        fontFamily: UI_FONT_BODY,
+        fontStyle: 'normal',
+        fontSize: '16px',
+        color: '#c8e6c9',
+        align: 'center',
+        lineSpacing: 6,
+        wordWrap: { width: Math.min(520, width * 0.82) },
+      })
       .setOrigin(0.5);
 
     void this.platform.saves.load().then((save) => {
@@ -87,7 +86,10 @@ export class MenuScene extends Phaser.Scene {
         .text(
           width / 2,
           height * 0.93,
-          `Unlocked through Level ${save.campaign.highestUnlocked} · Clears ${save.runsCompleted}`,
+          t('ui.unlockedThrough', {
+            level: save.campaign.highestUnlocked,
+            clears: save.runsCompleted,
+          }),
           {
             fontFamily: UI_FONT_BODY,
             fontStyle: 'normal',
@@ -97,5 +99,51 @@ export class MenuScene extends Phaser.Scene {
         )
         .setOrigin(0.5);
     });
+  }
+
+  private addLangToggle(width: number, y: number): void {
+    const current = getLanguageSetting();
+    const label = this.add
+      .text(width / 2, y - 22, t('ui.language'), {
+        fontFamily: UI_FONT_BODY,
+        fontStyle: '700',
+        fontSize: '14px',
+        color: '#a5d6a7',
+      })
+      .setOrigin(0.5);
+
+    const options: { id: LanguageSetting; key: string }[] = [
+      { id: 'auto', key: 'ui.lang.auto' },
+      { id: 'en', key: 'ui.lang.en' },
+      { id: 'ru', key: 'ui.lang.ru' },
+    ];
+    const gap = 100;
+    const startX = width / 2 - gap;
+    options.forEach((opt, i) => {
+      const active = opt.id === current;
+      const btn = this.add
+        .text(startX + i * gap, y + 10, t(opt.key), {
+          fontFamily: UI_FONT_DISPLAY,
+          fontStyle: '800',
+          fontSize: '16px',
+          color: active ? '#1b1208' : '#e8f5e9',
+          backgroundColor: active ? '#ffe082' : '#2e7d32',
+          padding: { x: 14, y: 10 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      btn.on('pointerup', () => void this.changeLanguage(opt.id));
+    });
+
+    void label;
+  }
+
+  private async changeLanguage(next: LanguageSetting): Promise<void> {
+    const save = await this.platform.saves.load();
+    const browserLang = this.platform.platform.getLocale();
+    setLanguageSetting(next, browserLang);
+    save.settings.language = next;
+    await this.platform.saves.save(save);
+    this.scene.restart({ platform: this.platform });
   }
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setLanguageSetting } from './game/localization/i18n';
 import { BootScene } from './game/scenes/BootScene';
 import { CombatScene } from './game/scenes/CombatScene';
 import { LevelSelectScene } from './game/scenes/LevelSelectScene';
@@ -11,6 +12,7 @@ async function boot(): Promise<void> {
   const save = await platform.saves.load();
   platform.audio.setSfxVolume(save.settings.sfxVolume);
   platform.audio.setMusicVolume(save.settings.musicVolume);
+  setLanguageSetting(save.settings.language, platform.platform.getLocale());
 
   const parent = document.getElementById('app') ?? undefined;
 

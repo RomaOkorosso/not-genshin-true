@@ -53,6 +53,8 @@ export interface RunSnapshot {
   ultimateReady: boolean;
   ultimateCooldownRemaining: number;
   ultimateCooldownMax: number;
+  /** True when arena is clear and the next wave is still >1.5s away. */
+  canSkipWait: boolean;
 }
 
 export interface RunEvents {
@@ -77,6 +79,10 @@ const ARENA = {
 } as const;
 
 const MAX_DELTA_MS = 50;
+/** Offer skip only when the wait for the next spawn exceeds this. */
+const SKIP_WAIT_MIN_MS = 1500;
+/** Leave a short lead-in so the next wave does not dump instantly. */
+const SKIP_LEAD_IN_MS = 400;
 const ARROW_STORM_INTERVAL = 5;
 
 export class RunController {
@@ -220,7 +226,31 @@ export class RunController {
       ultimateReady: this.phase === 'combat' && this.ultimateCooldown <= 0,
       ultimateCooldownRemaining: Math.max(0, this.ultimateCooldown),
       ultimateCooldownMax: ARCHER_ULTIMATE.cooldownMs / 1000,
+      canSkipWait: this.canSkipWait(),
     };
+  }
+
+  canSkipWait(): boolean {
+    if (this.phase !== 'combat') return false;
+    if (this.enemies.some((e) => e.alive)) return false;
+    const until = this.waves.getMsUntilNextActivity();
+    return until !== null && until >= SKIP_WAIT_MIN_MS;
+  }
+
+  /**
+   * Skip idle time until just before the next wave/spawn.
+   * Only works when the arena is empty.
+   */
+  trySkipWait(): boolean {
+    if (!this.canSkipWait()) return false;
+    const until = this.waves.getMsUntilNextActivity();
+    if (until === null) return false;
+    const jump = Math.max(0, until - SKIP_LEAD_IN_MS);
+    if (jump < 200) return false;
+    const advanced = this.waves.skipAhead(jump);
+    if (advanced <= 0) return false;
+    this.ultimateCooldown = Math.max(0, this.ultimateCooldown - advanced / 1000);
+    return true;
   }
 
   /** Focused arrow barrage. Returns false if on cooldown or not in combat. */

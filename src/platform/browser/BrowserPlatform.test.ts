@@ -19,6 +19,7 @@ describe('migrateSave', () => {
     expect(migrated.bestTowerHpRemaining).toBe(12);
     expect(migrated.settings.sfxVolume).toBe(1);
     expect(migrated.settings.musicVolume).toBe(0);
+    expect(migrated.settings.language).toBe('auto');
     expect(migrated.campaign.highestUnlocked).toBe(1);
   });
 
@@ -31,6 +32,7 @@ describe('migrateSave', () => {
     });
     expect(migrated.version).toBe(2);
     expect(migrated.campaign.highestUnlocked).toBe(1);
+    expect(migrated.settings.language).toBe('auto');
   });
 });
 

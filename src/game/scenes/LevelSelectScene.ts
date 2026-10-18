@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import type { PlatformBundle } from '../../platform/types';
 import { UI_FONT_BODY, UI_FONT_DISPLAY } from '../../ui/fonts';
-import { ALL_LEVEL_IDS, getLevelDef, type LevelId } from '../content/levels';
+import { levelBlurb, levelName } from '../localization/content';
+import { t } from '../localization/i18n';
+import { ALL_LEVEL_IDS, type LevelId } from '../content/levels';
 
 export class LevelSelectScene extends Phaser.Scene {
   private platform!: PlatformBundle;
@@ -19,7 +21,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0x122018);
 
     this.add
-      .text(width / 2, 56, 'CAMPAIGN', {
+      .text(width / 2, 48, t('ui.campaign'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '36px',
@@ -28,13 +30,15 @@ export class LevelSelectScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 96, 'Clear a level to unlock the next', {
+      .text(width / 2, 92, t('ui.campaignHint'), {
         fontFamily: UI_FONT_BODY,
         fontStyle: 'normal',
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#a5d6a7',
+        align: 'center',
+        wordWrap: { width: Math.min(520, width * 0.82) },
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5, 0);
 
     void this.platform.saves.load().then((save) => {
       const unlocked = save.campaign.highestUnlocked;
@@ -44,7 +48,7 @@ export class LevelSelectScene extends Phaser.Scene {
     });
 
     const back = this.add
-      .text(width / 2, height - 64, 'BACK', {
+      .text(width / 2, height - 64, t('ui.back'), {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '20px',
@@ -58,16 +62,17 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private addLevelCard(id: LevelId, index: number, unlocked: number, width: number): void {
-    const def = getLevelDef(id);
-    const y = 150 + index * 110;
+    // Leave clear gap under the campaign hint (hint baseline ~92 + line height).
+    const y = 178 + index * 112;
     const isOpen = id <= unlocked;
     const colW = Math.min(520, width * 0.78);
+    const name = levelName(id);
     const bg = this.add
       .rectangle(width / 2, y, width * 0.86, 92, isOpen ? 0x1b5e20 : 0x263238, 0.95)
       .setStrokeStyle(2, isOpen ? 0xa5d6a7 : 0x546e7a);
 
     this.add
-      .text(width / 2, y - 18, isOpen ? def.name : `${def.name}  —  LOCKED`, {
+      .text(width / 2, y - 18, isOpen ? name : `${name}  —  ${t('ui.locked')}`, {
         fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '18px',
@@ -76,7 +81,7 @@ export class LevelSelectScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, y + 16, def.introBlurb, {
+      .text(width / 2, y + 16, levelBlurb(id), {
         fontFamily: UI_FONT_BODY,
         fontStyle: 'normal',
         fontSize: '15px',

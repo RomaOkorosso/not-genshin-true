@@ -22,6 +22,8 @@ export interface SavePayload {
   settings: {
     sfxVolume: number;
     musicVolume: number;
+    /** auto = follow browser locale (ru* → Russian). */
+    language: 'auto' | 'en' | 'ru';
   };
   campaign: CampaignSave;
 }

@@ -8,3 +8,4 @@
 - Codex tab lists are capped for scroll performance.
 - Default git branch is currently `master`; CI listens to both `main` and `master`.
 - Save key is `not-genshin:save:v2` (legacy v1 migrated on load).
+- Localization is EN/RU only; English data fields on upgrades/enemies remain as balance fallbacks, UI uses `t()` keys.

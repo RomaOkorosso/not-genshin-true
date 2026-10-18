@@ -68,6 +68,57 @@ export class WaveDirector {
     return this.finished;
   }
 
+  /**
+   * Ms until the next spawn opportunity (segment start, event, or interval tick).
+   * Returns null if nothing remains to spawn before the run ends.
+   */
+  getMsUntilNextActivity(): number | null {
+    if (this.finished) return null;
+    const now = this.elapsedMs;
+    let soonest = Number.POSITIVE_INFINITY;
+
+    for (const rt of this.runtimes) {
+      const { segment } = rt;
+      const endMs = segment.startMs + segment.durationMs;
+
+      if (segment.events) {
+        for (let i = 0; i < segment.events.length; i++) {
+          if (rt.eventsFired.has(i)) continue;
+          const at = segment.startMs + segment.events[i]!.atMs;
+          if (at >= now) soonest = Math.min(soonest, at);
+        }
+      }
+
+      if (rt.budgetSpent >= segment.spawnBudget) continue;
+      if (now > endMs + 50) continue;
+
+      if (now < segment.startMs) {
+        soonest = Math.min(soonest, segment.startMs);
+      } else {
+        const wait = rt.started ? Math.max(0, rt.spawnTimer) : 0;
+        soonest = Math.min(soonest, now + wait);
+      }
+    }
+
+    if (!Number.isFinite(soonest) || soonest <= now) return null;
+    return soonest - now;
+  }
+
+  /** Jump the clock forward without emitting mid-skip spawns. */
+  skipAhead(ms: number): number {
+    if (ms <= 0 || this.finished) return 0;
+    const before = this.elapsedMs;
+    this.elapsedMs = Math.min(this.durationMs, this.elapsedMs + ms);
+    if (this.elapsedMs >= this.durationMs) this.finished = true;
+    // Keep interval timers coherent relative to the jump.
+    for (const rt of this.runtimes) {
+      if (!rt.started) continue;
+      if (rt.budgetSpent >= rt.segment.spawnBudget) continue;
+      rt.spawnTimer = Math.max(0, rt.spawnTimer - ms);
+    }
+    return this.elapsedMs - before;
+  }
+
   update(deltaMs: number): SpawnRequest[] {
     if (this.finished) return [];
     this.elapsedMs += deltaMs;

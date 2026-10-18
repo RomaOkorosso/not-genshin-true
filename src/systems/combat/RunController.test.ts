@@ -110,4 +110,33 @@ describe('RunController', () => {
     expect(run.tryActivateUltimate()).toBe(false);
     run.cleanup();
   });
+
+  it('skips idle wait when the arena is clear', () => {
+    const run = new RunController(silentAudio, 17);
+    run.start(1, 17);
+    let offered = false;
+    for (let i = 0; i < 5000 && !offered; i++) {
+      if (run.getPhase() === 'levelup') {
+        const offer = run.snapshot().offer;
+        if (offer?.[0]) run.chooseUpgrade(offer[0].id);
+        continue;
+      }
+      for (const e of run.getEnemies()) {
+        if (e.alive) run.debugDamageEnemy(e, 99999);
+      }
+      if (run.getPhase() === 'levelup') {
+        const offer = run.snapshot().offer;
+        if (offer?.[0]) run.chooseUpgrade(offer[0].id);
+        continue;
+      }
+      run.update(50);
+      if (run.canSkipWait()) offered = true;
+    }
+    expect(offered).toBe(true);
+    const before = run.snapshot().elapsedMs;
+    expect(run.trySkipWait()).toBe(true);
+    expect(run.snapshot().elapsedMs).toBeGreaterThan(before + 400);
+    expect(run.canSkipWait()).toBe(false);
+    run.cleanup();
+  });
 });
