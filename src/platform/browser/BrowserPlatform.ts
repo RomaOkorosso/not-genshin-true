@@ -2,8 +2,8 @@ import type {
   AdResult,
   AdService,
   AnalyticsService,
-  AudioEvent,
-  AudioService,
+  CampaignClearRecord,
+  CampaignSave,
   LeaderboardEntry,
   LeaderboardService,
   PlatformBundle,
@@ -11,10 +11,17 @@ import type {
   SavePayload,
   SaveService,
 } from '../types';
+import { WebAudioService } from './WebAudioService';
 
-const SAVE_KEY = 'not-genshin:save:v1';
+const SAVE_KEY = 'not-genshin:save:v2';
+const SAVE_KEY_LEGACY = 'not-genshin:save:v1';
 const LB_KEY = 'not-genshin:leaderboard:v1';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
+
+export const DEFAULT_CAMPAIGN: CampaignSave = {
+  highestUnlocked: 1,
+  cleared: {},
+};
 
 export const DEFAULT_SAVE: SavePayload = {
   version: SAVE_VERSION,
@@ -25,6 +32,7 @@ export const DEFAULT_SAVE: SavePayload = {
     sfxVolume: 0.7,
     musicVolume: 0.5,
   },
+  campaign: { ...DEFAULT_CAMPAIGN, cleared: {} },
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -32,7 +40,13 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 export function migrateSave(raw: unknown): SavePayload {
-  if (!isObject(raw)) return { ...DEFAULT_SAVE, settings: { ...DEFAULT_SAVE.settings } };
+  if (!isObject(raw)) {
+    return {
+      ...DEFAULT_SAVE,
+      settings: { ...DEFAULT_SAVE.settings },
+      campaign: { highestUnlocked: 1, cleared: {} },
+    };
+  }
 
   const settingsRaw = isObject(raw.settings) ? raw.settings : {};
   const sfx = typeof settingsRaw.sfxVolume === 'number' ? clamp01(settingsRaw.sfxVolume) : 0.7;
@@ -45,6 +59,26 @@ export function migrateSave(raw: unknown): SavePayload {
     runsCompleted: sanitizeNonNegInt(raw.runsCompleted),
     bestTowerHpRemaining: sanitizeNonNegInt(raw.bestTowerHpRemaining),
     settings: { sfxVolume: sfx, musicVolume: music },
+    campaign: migrateCampaign(raw.campaign),
+  };
+}
+
+function migrateCampaign(raw: unknown): CampaignSave {
+  if (!isObject(raw)) return { highestUnlocked: 1, cleared: {} };
+  const highest = sanitizeNonNegInt(raw.highestUnlocked);
+  const cleared: Record<string, CampaignClearRecord> = {};
+  if (isObject(raw.cleared)) {
+    for (const [key, value] of Object.entries(raw.cleared)) {
+      if (!isObject(value)) continue;
+      cleared[key] = {
+        bestTowerHp: sanitizeNonNegInt(value.bestTowerHp),
+        clears: sanitizeNonNegInt(value.clears),
+      };
+    }
+  }
+  return {
+    highestUnlocked: Math.min(5, Math.max(1, highest || 1)),
+    cleared,
   };
 }
 
@@ -62,7 +96,7 @@ class BrowserPlatformService implements PlatformService {
   readonly id = 'browser' as const;
 
   async init(): Promise<void> {
-    // no-op for browser
+    // no-op
   }
 
   getLocale(): string {
@@ -73,11 +107,21 @@ class BrowserPlatformService implements PlatformService {
 class LocalStorageSaveService implements SaveService {
   async load(): Promise<SavePayload> {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return { ...DEFAULT_SAVE, settings: { ...DEFAULT_SAVE.settings } };
+      const raw = localStorage.getItem(SAVE_KEY) ?? localStorage.getItem(SAVE_KEY_LEGACY);
+      if (!raw) {
+        return {
+          ...DEFAULT_SAVE,
+          settings: { ...DEFAULT_SAVE.settings },
+          campaign: { highestUnlocked: 1, cleared: {} },
+        };
+      }
       return migrateSave(JSON.parse(raw) as unknown);
     } catch {
-      return { ...DEFAULT_SAVE, settings: { ...DEFAULT_SAVE.settings } };
+      return {
+        ...DEFAULT_SAVE,
+        settings: { ...DEFAULT_SAVE.settings },
+        campaign: { highestUnlocked: 1, cleared: {} },
+      };
     }
   }
 
@@ -85,13 +129,14 @@ class LocalStorageSaveService implements SaveService {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch {
-      // quota / private mode — ignore for MVP
+      // ignore
     }
   }
 
   async clear(): Promise<void> {
     try {
       localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(SAVE_KEY_LEGACY);
     } catch {
       // ignore
     }
@@ -147,26 +192,6 @@ class ConsoleAnalyticsService implements AnalyticsService {
   }
 }
 
-class PlaceholderAudioService implements AudioService {
-  private sfxVolume = 0.7;
-  private musicVolume = 0.5;
-
-  play(event: AudioEvent): void {
-    // Placeholder: semantic events only; no concrete filenames yet.
-    void event;
-    void this.sfxVolume;
-    void this.musicVolume;
-  }
-
-  setSfxVolume(volume: number): void {
-    this.sfxVolume = clamp01(volume);
-  }
-
-  setMusicVolume(volume: number): void {
-    this.musicVolume = clamp01(volume);
-  }
-}
-
 export function createBrowserPlatformBundle(): PlatformBundle {
   return {
     platform: new BrowserPlatformService(),
@@ -174,6 +199,31 @@ export function createBrowserPlatformBundle(): PlatformBundle {
     ads: new MockAdService(),
     leaderboards: new LocalLeaderboardService(),
     analytics: new ConsoleAnalyticsService(),
-    audio: new PlaceholderAudioService(),
+    audio: new WebAudioService(),
+  };
+}
+
+export function recordCampaignVictory(
+  save: SavePayload,
+  levelId: number,
+  towerHp: number,
+): SavePayload {
+  const key = String(levelId);
+  const prev = save.campaign.cleared[key];
+  const cleared = { ...save.campaign.cleared };
+  cleared[key] = {
+    bestTowerHp: Math.max(prev?.bestTowerHp ?? 0, Math.ceil(towerHp)),
+    clears: (prev?.clears ?? 0) + 1,
+  };
+  const nextUnlock = Math.min(5, Math.max(save.campaign.highestUnlocked, levelId + 1));
+  return {
+    ...save,
+    lastRunAt: Date.now(),
+    runsCompleted: save.runsCompleted + 1,
+    bestTowerHpRemaining: Math.max(save.bestTowerHpRemaining, Math.ceil(towerHp)),
+    campaign: {
+      highestUnlocked: nextUnlock,
+      cleared,
+    },
   };
 }

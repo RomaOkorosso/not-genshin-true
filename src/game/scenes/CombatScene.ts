@@ -1,9 +1,21 @@
 import Phaser from 'phaser';
-import type { PlatformBundle, SavePayload } from '../../platform/types';
-import { UI_FONT, UI_FONT_TITLE } from '../../ui/fonts';
+import { RunController } from '../../systems/combat/RunController';
+import { recordCampaignVictory } from '../../platform/browser/BrowserPlatform';
+import type { PlatformBundle } from '../../platform/types';
+import {
+  ALMANAC_TYPE,
+  UI_FONT_BODY,
+  UI_FONT_DISPLAY,
+} from '../../ui/fonts';
 import { ARCHER_BASELINE } from '../balance/archer';
 import type { UpgradeDef, UpgradeId } from '../balance/upgrades';
-import { RunController } from '../../systems/combat/RunController';
+import {
+  CODEX_SECTIONS,
+  pagesForSection,
+  type CodexPage,
+  type CodexSectionId,
+} from '../content/codex';
+import { getLevelDef, isLevelId, type LevelId } from '../content/levels';
 
 /** Keep world sprites below HUD/overlays even with y-sorting. */
 const DEPTH = {
@@ -32,6 +44,7 @@ interface ProjectileView {
 
 export class CombatScene extends Phaser.Scene {
   private platform!: PlatformBundle;
+  private levelId: LevelId = 1;
   private run!: RunController;
   private enemyViews = new Map<number, EnemyView>();
   private projectileViews = new Map<number, ProjectileView>();
@@ -42,6 +55,7 @@ export class CombatScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private killText!: Phaser.GameObjects.Text;
+  private codexBtn!: Phaser.GameObjects.Image;
 
   private overlayRoot!: Phaser.GameObjects.Container;
   private levelUpPanel!: Phaser.GameObjects.Container;
@@ -49,24 +63,38 @@ export class CombatScene extends Phaser.Scene {
   private endPanel!: Phaser.GameObjects.Container;
   private almanacPanel!: Phaser.GameObjects.Container;
   private almanacOpen = false;
-  /** Explicit pause menu (PAUSE / Esc), not Almanac soft-pause. */
   private pauseMenuOpen = false;
-  /** True when Almanac froze combat and should resume on close. */
   private almanacHeldCombat = false;
+  private codexSection: CodexSectionId = 'mechanics';
+  private almanacTabs: Phaser.GameObjects.Text[] = [];
+  private almanacScrollContent!: Phaser.GameObjects.Container;
+  private almanacScrollMask!: Phaser.GameObjects.Graphics;
+  private almanacScrollY = 0;
+  private almanacContentHeight = 0;
+  private almanacViewport = { x: 0, y: 0, width: 0, height: 0, columnWidth: 0 };
+  private almanacDragLastY: number | null = null;
+  private bossFlash?: Phaser.GameObjects.Rectangle;
+  private hitSparkIds = new Set<number>();
 
   constructor() {
     super('Combat');
   }
 
-  init(data: { platform?: PlatformBundle }): void {
+  init(data: { platform?: PlatformBundle; levelId?: LevelId }): void {
     this.platform = data.platform ?? (this.registry.get('platform') as PlatformBundle);
+    this.levelId = isLevelId(data.levelId) ? data.levelId : 1;
   }
 
   create(): void {
     const arena = { width: 720, height: 1280, centerX: 360, centerY: 640 };
 
     this.run = new RunController(this.platform.audio);
-    this.run.start();
+    this.run.start(this.levelId);
+    this.run.bus.on('boss_spawn', () => this.flashBossSpawn());
+    this.run.bus.on('evolution_ready', () => {
+      this.platform.audio.play('evolution');
+      this.flashEvolution();
+    });
 
     this.drawArena(arena);
     this.createHud(arena);
@@ -120,8 +148,8 @@ export class CombatScene extends Phaser.Scene {
     // Label above the tower HP bar
     this.towerHpText = this.add
       .text(40, top, 'Tower 100 / 100', {
-        fontFamily: UI_FONT,
-        fontSize: '15px',
+        fontFamily: UI_FONT_BODY,
+        fontSize: '16px',
         fontStyle: '700',
         color: '#ffcdd2',
       })
@@ -147,7 +175,7 @@ export class CombatScene extends Phaser.Scene {
 
     this.levelText = this.add
       .text(arena.width - 40, top, 'Lv 1', {
-        fontFamily: UI_FONT,
+        fontFamily: UI_FONT_DISPLAY,
         fontSize: '20px',
         fontStyle: '800',
         color: '#e8f5e9',
@@ -157,7 +185,7 @@ export class CombatScene extends Phaser.Scene {
 
     this.timerText = this.add
       .text(arena.width - 40, top + 28, '0:00', {
-        fontFamily: UI_FONT,
+        fontFamily: UI_FONT_BODY,
         fontSize: '16px',
         fontStyle: '700',
         color: '#a5d6a7',
@@ -167,8 +195,8 @@ export class CombatScene extends Phaser.Scene {
 
     this.killText = this.add
       .text(arena.width / 2, top + 8, 'Kills 0', {
-        fontFamily: UI_FONT,
-        fontSize: '15px',
+        fontFamily: UI_FONT_BODY,
+        fontSize: '16px',
         fontStyle: '700',
         color: '#c8e6c9',
       })
@@ -177,24 +205,24 @@ export class CombatScene extends Phaser.Scene {
 
     const pauseBtn = this.add
       .text(arena.width - 40, 118, 'PAUSE', {
-        fontFamily: UI_FONT,
+        fontFamily: UI_FONT_DISPLAY,
         fontSize: '16px',
         fontStyle: '800',
         color: '#1b1b1b',
         backgroundColor: '#ffe082',
-        padding: { x: 10, y: 6 },
+        padding: { x: 12, y: 10 },
       })
       .setOrigin(1, 0)
       .setDepth(hud + 5)
       .setInteractive({ useHandCursor: true });
     pauseBtn.on('pointerup', () => this.onPausePressed());
 
-    const codex = this.add
+    this.codexBtn = this.add
       .image(56, 130, 'codex_btn')
       .setDepth(hud + 5)
       .setScale(0.85)
       .setInteractive({ useHandCursor: true });
-    codex.on('pointerup', () => this.toggleAlmanac());
+    this.codexBtn.on('pointerup', () => this.toggleAlmanac());
   }
 
   private createOverlays(arena: { width: number; height: number }): void {
@@ -209,7 +237,7 @@ export class CombatScene extends Phaser.Scene {
     const pBg = this.add.rectangle(arena.width / 2, arena.height / 2, arena.width, arena.height, 0x000000, 0.55);
     const pTitle = this.add
       .text(arena.width / 2, arena.height * 0.35, 'PAUSED', {
-        fontFamily: UI_FONT_TITLE,
+        fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '42px',
         color: '#fffde7',
@@ -219,60 +247,257 @@ export class CombatScene extends Phaser.Scene {
       this.closePauseMenu();
     });
     const restart = this.makeButton(arena.width / 2, arena.height * 0.56, 'RESTART', () => this.restartRun());
-    const toMenu = this.makeButton(arena.width / 2, arena.height * 0.64, 'MAIN MENU', () => {
-      this.scene.start('Menu', { platform: this.platform });
+    const toSelect = this.makeButton(arena.width / 2, arena.height * 0.64, 'LEVEL SELECT', () => {
+      this.scene.start('LevelSelect', { platform: this.platform });
     });
-    this.pausePanel.add([pBg, pTitle, resume, restart, toMenu]);
+    this.pausePanel.add([pBg, pTitle, resume, restart, toSelect]);
 
-    // Almanac
-    const aBg = this.add.rectangle(arena.width / 2, arena.height / 2, arena.width * 0.86, arena.height * 0.7, 0x3e2723, 0.96);
+    this.buildAlmanacOverlay(arena.width, arena.height);
+  }
+
+  private buildAlmanacOverlay(width: number, height: number): void {
+    const panelW = width * 0.92;
+    const panelH = height * 0.82;
+    const panelX = width / 2;
+    const panelY = height / 2;
+    const padX = width < 500 ? ALMANAC_TYPE.padXMobile : ALMANAC_TYPE.padXDesktop;
+
+    const aBg = this.add
+      .rectangle(panelX, panelY, panelW, panelH, 0x2a1810, 0.98)
+      .setStrokeStyle(3, 0x8d6e63);
+
     const aTitle = this.add
-      .text(arena.width / 2, arena.height * 0.22, 'ALMANAC', {
-        fontFamily: UI_FONT_TITLE,
+      .text(panelX, panelY - panelH / 2 + 36, 'ALMANAC', {
+        fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
-        fontSize: '36px',
+        fontSize: `${ALMANAC_TYPE.titlePx}px`,
         color: '#ffe082',
       })
       .setOrigin(0.5);
-    const aBody = this.add
-      .text(
-        arena.width / 2,
-        arena.height * 0.42,
-        [
-          'Archer — auto-fires at the nearest enemy.',
-          'Tower — defend its HP; enemies wind up before striking.',
-          'Upgrades — pick 1 of 3 on level-up.',
-          '',
-          'Enemies:',
-          '• Grunt — basic melee',
-          '• Elite Grunt — tanky aura variant',
-          '• Raider Captain — summons Grunts at 60% HP',
-          '',
-          'Level 1 has no Evolutions.',
-        ].join('\n'),
-        {
-          fontFamily: UI_FONT,
-          fontStyle: '700',
-          fontSize: '16px',
-          color: '#fff8e1',
-          align: 'left',
-          wordWrap: { width: arena.width * 0.7 },
-        },
+
+    const tabRowY = panelY - panelH / 2 + 96;
+    const tabGap = 10;
+    const tabAreaLeft = panelX - panelW / 2 + padX;
+    const tabAreaWidth = panelW - padX * 2;
+    const tabWidth = (tabAreaWidth - tabGap * (CODEX_SECTIONS.length - 1)) / CODEX_SECTIONS.length;
+
+    this.almanacTabs = [];
+    const tabObjects: Phaser.GameObjects.GameObject[] = [aBg, aTitle];
+    CODEX_SECTIONS.forEach((sec, i) => {
+      const tabX = tabAreaLeft + tabWidth * i + tabGap * i + tabWidth / 2;
+      const tabPadY = Math.max(
+        18,
+        Math.ceil((ALMANAC_TYPE.tabMinHeight - ALMANAC_TYPE.tabPx) / 2),
+      );
+      const tab = this.add
+        .text(tabX, tabRowY, sec.label, {
+          fontFamily: UI_FONT_DISPLAY,
+          fontStyle: '800',
+          fontSize: `${ALMANAC_TYPE.tabPx}px`,
+          color: '#1b1208',
+          backgroundColor: '#ffe082',
+          padding: { x: 6, y: tabPadY },
+          align: 'center',
+          fixedWidth: Math.floor(tabWidth),
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      tab.on('pointerup', () => {
+        this.codexSection = sec.id;
+        this.almanacScrollY = 0;
+        this.refreshAlmanacBody();
+        this.syncAlmanacTabStyles();
+      });
+      this.almanacTabs.push(tab);
+      tabObjects.push(tab);
+    });
+
+    const contentTop = tabRowY + ALMANAC_TYPE.tabMinHeight / 2 + 22;
+    const closeY = panelY + panelH / 2 - 44;
+    const contentBottom = closeY - 28;
+    const columnWidth = Math.min(ALMANAC_TYPE.maxColumnWidth, panelW - padX * 2);
+    this.almanacViewport = {
+      x: panelX - columnWidth / 2,
+      y: contentTop,
+      width: columnWidth,
+      height: contentBottom - contentTop,
+      columnWidth,
+    };
+
+    this.almanacScrollMask = this.add.graphics();
+    this.almanacScrollMask.fillStyle(0xffffff);
+    this.almanacScrollMask.fillRect(
+      this.almanacViewport.x,
+      this.almanacViewport.y,
+      this.almanacViewport.width,
+      this.almanacViewport.height,
+    );
+    this.almanacScrollMask.setVisible(false);
+
+    this.almanacScrollContent = this.add.container(this.almanacViewport.x, this.almanacViewport.y);
+    this.almanacScrollContent.setMask(
+      this.almanacScrollMask.createGeometryMask(),
+    );
+
+    const scrollHit = this.add
+      .rectangle(
+        panelX,
+        this.almanacViewport.y + this.almanacViewport.height / 2,
+        columnWidth + 8,
+        this.almanacViewport.height,
+        0x000000,
+        0.001,
       )
-      .setOrigin(0.5);
-    const aClose = this.makeButton(arena.width / 2, arena.height * 0.78, 'CLOSE BOOK', () => this.toggleAlmanac(false));
-    this.almanacPanel.add([aBg, aTitle, aBody, aClose]);
+      .setInteractive({ draggable: false, useHandCursor: false });
+    scrollHit.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.almanacDragLastY = pointer.y;
+    });
+    scrollHit.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!this.almanacOpen || this.almanacDragLastY === null || !pointer.isDown) return;
+      const dy = pointer.y - this.almanacDragLastY;
+      this.almanacDragLastY = pointer.y;
+      this.scrollAlmanacBy(dy);
+    });
+    scrollHit.on('pointerup', () => {
+      this.almanacDragLastY = null;
+    });
+    scrollHit.on('pointerout', () => {
+      this.almanacDragLastY = null;
+    });
+
+    const aClose = this.makeButton(panelX, closeY, 'CLOSE BOOK', () => this.toggleAlmanac(false));
+    tabObjects.push(this.almanacScrollContent, scrollHit, aClose);
+    this.almanacPanel.add(tabObjects);
+
+    this.syncAlmanacTabStyles();
+    this.refreshAlmanacBody();
+  }
+
+  private syncAlmanacTabStyles(): void {
+    this.almanacTabs.forEach((tab, i) => {
+      const active = CODEX_SECTIONS[i]?.id === this.codexSection;
+      tab.setStyle({
+        backgroundColor: active ? '#ffe082' : '#5d4037',
+        color: active ? '#1b1208' : '#ffe0b2',
+      });
+    });
+  }
+
+  private scrollAlmanacBy(deltaY: number): void {
+    const maxScroll = Math.max(0, this.almanacContentHeight - this.almanacViewport.height);
+    this.almanacScrollY = Phaser.Math.Clamp(this.almanacScrollY + deltaY, -maxScroll, 0);
+    this.almanacScrollContent.y = this.almanacViewport.y + this.almanacScrollY;
+  }
+
+  private refreshAlmanacBody(): void {
+    this.almanacScrollContent.removeAll(true);
+    const pages = pagesForSection(this.codexSection);
+    const colW = this.almanacViewport.columnWidth;
+    let y = 0;
+
+    for (const page of pages) {
+      y += this.addAlmanacEntry(page, y, colW);
+      y += ALMANAC_TYPE.blockGap;
+    }
+
+    this.almanacContentHeight = y;
+    this.scrollAlmanacBy(0);
+  }
+
+  private addAlmanacEntry(page: CodexPage, y: number, colW: number): number {
+    const title = this.add
+      .text(0, y, page.title, {
+        fontFamily: UI_FONT_BODY,
+        fontStyle: '700',
+        fontSize: `${ALMANAC_TYPE.entryTitlePx}px`,
+        color: '#fff3e0',
+        wordWrap: { width: colW },
+      })
+      .setOrigin(0, 0);
+
+    let cursor = y + title.height + ALMANAC_TYPE.titleToBodyGap;
+    const body = this.add
+      .text(0, cursor, page.body, {
+        fontFamily: UI_FONT_BODY,
+        fontStyle: 'normal',
+        fontSize: `${ALMANAC_TYPE.bodyPx}px`,
+        color: '#ffe0b2',
+        lineSpacing: Math.round(ALMANAC_TYPE.bodyPx * (ALMANAC_TYPE.lineHeight - 1)),
+        wordWrap: { width: colW },
+      })
+      .setOrigin(0, 0);
+    cursor += body.height;
+
+    const nodes: Phaser.GameObjects.GameObject[] = [title, body];
+    if (page.requires) {
+      cursor += ALMANAC_TYPE.bodyToMetaGap;
+      const req = this.add
+        .text(0, cursor, `Requires: ${page.requires}`, {
+          fontFamily: UI_FONT_BODY,
+          fontStyle: 'normal',
+          fontSize: `${ALMANAC_TYPE.metaPx}px`,
+          color: '#bcaaa4',
+          wordWrap: { width: colW },
+        })
+        .setOrigin(0, 0);
+      nodes.push(req);
+      cursor += req.height;
+    }
+
+    this.almanacScrollContent.add(nodes);
+    return cursor - y;
+  }
+
+  private flashBossSpawn(): void {
+    const { width, height } = this.scale;
+    this.bossFlash?.destroy();
+    this.bossFlash = this.add
+      .rectangle(width / 2, height / 2, width, height, 0xffecb3, 0.35)
+      .setDepth(DEPTH.overlay - 1);
+    this.tweens.add({
+      targets: this.bossFlash,
+      alpha: 0,
+      duration: 600,
+      onComplete: () => {
+        this.bossFlash?.destroy();
+        this.bossFlash = undefined;
+      },
+    });
+  }
+
+  private flashEvolution(): void {
+    const { width, height } = this.scale;
+    const flash = this.add
+      .rectangle(width / 2, height / 2, width, height, 0xce93d8, 0.4)
+      .setDepth(DEPTH.overlay - 1);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => flash.destroy(),
+    });
+  }
+
+  private spawnHitSpark(x: number, y: number): void {
+    const spark = this.add.circle(x, y, 6, 0xfff59d, 0.9).setDepth(DEPTH.projectile + 1);
+    this.tweens.add({
+      targets: spark,
+      scale: 2.2,
+      alpha: 0,
+      duration: 180,
+      onComplete: () => spark.destroy(),
+    });
   }
 
   private makeButton(x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.Text {
     const btn = this.add
       .text(x, y, label, {
-        fontFamily: UI_FONT,
-          fontStyle: '700',
+        fontFamily: UI_FONT_DISPLAY,
+        fontStyle: '700',
         fontSize: '20px',
         color: '#1b1b1b',
         backgroundColor: '#a5d6a7',
-        padding: { x: 18, y: 10 },
+        padding: { x: 18, y: 12 },
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
@@ -283,7 +508,10 @@ export class CombatScene extends Phaser.Scene {
   private bindInput(): void {
     this.input.keyboard?.on('keydown-ESC', () => this.onPausePressed());
     this.input.keyboard?.on('keydown-P', () => this.onPausePressed());
-
+    this.input.on('wheel', (_p: unknown, _gos: unknown, _dx: number, dy: number) => {
+      if (!this.almanacOpen) return;
+      this.scrollAlmanacBy(-dy * 0.55);
+    });
     this.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
@@ -363,6 +591,12 @@ export class CombatScene extends Phaser.Scene {
       view.hpBar.width = 32 * hpRatio;
       view.hpBar.setFillStyle(hpRatio > 0.35 ? 0x00e676 : 0xff1744);
       view.sprite.setAlpha(e.hitFlash > 0 ? 0.65 : 1);
+      if (e.hitFlash > 0.08 && !this.hitSparkIds.has(e.id)) {
+        this.hitSparkIds.add(e.id);
+        this.spawnHitSpark(e.x, e.y);
+      } else if (e.hitFlash <= 0) {
+        this.hitSparkIds.delete(e.id);
+      }
       view.windup.setVisible(e.state === 'winding_up');
       if (e.state === 'winding_up') {
         const t = 1 - e.windupRemaining / (e.def.attackWindupMs / 1000);
@@ -401,12 +635,17 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private createEnemyView(defId: string): EnemyView {
-    const key =
-      defId === 'elite_grunt'
-        ? 'enemy_elite_grunt'
-        : defId === 'raider_captain'
-          ? 'enemy_raider_captain'
-          : 'enemy_grunt';
+    const keyMap: Record<string, string> = {
+      grunt: 'enemy_grunt',
+      elite_grunt: 'enemy_elite_grunt',
+      raider_captain: 'enemy_raider_captain',
+      runner: 'enemy_runner',
+      elite_runner: 'enemy_elite_runner',
+      brute: 'enemy_brute',
+      elite_brute: 'enemy_elite_brute',
+      stone_golem: 'enemy_stone_golem',
+    };
+    const key = keyMap[defId] ?? 'enemy_grunt';
     const sprite = this.add.image(0, 0, key);
     const barY = -sprite.height * 0.58;
     const hpBarBg = this.add.rectangle(0, barY, 32, 6, 0x111111).setStrokeStyle(1, 0xffffff, 0.35);
@@ -425,9 +664,14 @@ export class CombatScene extends Phaser.Scene {
     this.towerHpText.setText(`Tower ${Math.ceil(snap.towerHp)} / ${snap.towerMaxHp}`);
     const xpRatio = snap.xpToNext > 0 ? snap.xp / snap.xpToNext : 0;
     this.xpBar.width = 200 * xpRatio;
-    this.levelText.setText(`Lv ${snap.heroLevel}`);
+    this.levelText.setText(`L${snap.levelId} · Lv ${snap.heroLevel}`);
     this.timerText.setText(formatTime(snap.elapsedMs));
     this.killText.setText(`Kills ${snap.killCount}`);
+    if (this.codexBtn) {
+      const pulse = snap.evolutionAvailable ? 0.85 + Math.sin(this.time.now / 200) * 0.15 : 1;
+      this.codexBtn.setScale(0.85 * pulse);
+      this.codexBtn.setTint(snap.evolutionAvailable ? 0xffecb3 : 0xffffff);
+    }
   }
 
   private syncOverlayVisibility(): void {
@@ -458,48 +702,51 @@ export class CombatScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
     const title = this.add
-      .text(width / 2, height * 0.18, 'LEVEL UP — Choose 1', {
-        fontFamily: UI_FONT_TITLE,
+      .text(width / 2, height * 0.16, 'LEVEL UP — Choose 1', {
+        fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
-        fontSize: '32px',
+        fontSize: '30px',
         color: '#fffde7',
       })
       .setOrigin(0.5);
 
     const book = this.add
-      .image(width / 2, height * 0.28, 'codex_btn')
-      .setScale(1.1)
+      .image(width / 2, height * 0.24, 'codex_btn')
+      .setScale(1.0)
       .setInteractive({ useHandCursor: true });
     book.on('pointerup', () => this.toggleAlmanac(true));
 
     const cards: Phaser.GameObjects.GameObject[] = [bg, title, book];
-    const startY = height * 0.4;
+    const startY = height * 0.36;
     offer.forEach((up, i) => {
-      const y = startY + i * 110;
+      const y = startY + i * 112;
+      const isEvo = Boolean(up.evolution);
       const card = this.add
-        .rectangle(width / 2, y, width * 0.78, 96, 0x1b5e20, 0.95)
-        .setStrokeStyle(2, 0xa5d6a7)
+        .rectangle(width / 2, y, width * 0.8, 100, isEvo ? 0x4a148c : 0x1b5e20, 0.96)
+        .setStrokeStyle(3, isEvo ? 0xffd54f : 0xa5d6a7)
         .setInteractive({ useHandCursor: true });
       const name = this.add
-        .text(width / 2, y - 22, up.name, {
-          fontFamily: UI_FONT,
-          fontStyle: '700',
-          fontSize: '22px',
-          color: '#e8f5e9',
+        .text(width / 2, y - 24, isEvo ? `★ ${up.name}` : up.name, {
+          fontFamily: UI_FONT_DISPLAY,
+          fontStyle: '800',
+          fontSize: isEvo ? '22px' : '20px',
+          color: isEvo ? '#ffe082' : '#e8f5e9',
         })
         .setOrigin(0.5);
       const desc = this.add
-        .text(width / 2, y + 16, up.description, {
-          fontFamily: UI_FONT,
-          fontStyle: '700',
-          fontSize: '14px',
-          color: '#c8e6c9',
+        .text(width / 2, y + 18, up.description, {
+          fontFamily: UI_FONT_BODY,
+          fontStyle: 'normal',
+          fontSize: '16px',
+          color: '#e8f5e9',
           align: 'center',
-          wordWrap: { width: width * 0.7 },
+          lineSpacing: 4,
+          wordWrap: { width: Math.min(520, width * 0.72) },
         })
         .setOrigin(0.5);
       card.on('pointerup', () => {
         if (this.run.getPhase() !== 'levelup') return;
+        if (isEvo) this.platform.audio.play('evolution');
         this.run.chooseUpgrade(up.id as UpgradeId);
         this.almanacOpen = false;
         this.almanacHeldCombat = false;
@@ -514,10 +761,11 @@ export class CombatScene extends Phaser.Scene {
   private showEnd(victory: boolean, towerHp: number, elapsedMs: number): void {
     this.endPanel.removeAll(true);
     const { width, height } = this.scale;
+    const def = getLevelDef(this.levelId);
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
     const title = this.add
-      .text(width / 2, height * 0.32, victory ? 'VICTORY' : 'DEFEAT', {
-        fontFamily: UI_FONT_TITLE,
+      .text(width / 2, height * 0.28, victory ? 'VICTORY' : 'DEFEAT', {
+        fontFamily: UI_FONT_DISPLAY,
         fontStyle: '800',
         fontSize: '48px',
         color: victory ? '#c8e6c9' : '#ffcdd2',
@@ -526,42 +774,56 @@ export class CombatScene extends Phaser.Scene {
     const detail = this.add
       .text(
         width / 2,
-        height * 0.42,
+        height * 0.38,
         victory
-          ? `Tower HP remaining: ${Math.ceil(towerHp)}\nTime: ${formatTime(elapsedMs)}`
-          : `The tower fell at ${formatTime(elapsedMs)}`,
+          ? `${def.name}\nTower HP: ${Math.ceil(towerHp)} · Time: ${formatTime(elapsedMs)}`
+          : `${def.name}\nThe tower fell at ${formatTime(elapsedMs)}`,
         {
-          fontFamily: UI_FONT,
-          fontStyle: '700',
-          fontSize: '18px',
+          fontFamily: UI_FONT_BODY,
+          fontStyle: 'normal',
+          fontSize: '17px',
           color: '#eeeeee',
           align: 'center',
+          lineSpacing: 6,
         },
       )
       .setOrigin(0.5);
-    const again = this.makeButton(width / 2, height * 0.55, 'PLAY AGAIN', () => this.restartRun());
-    const menu = this.makeButton(width / 2, height * 0.64, 'MAIN MENU', () => {
-      this.scene.start('Menu', { platform: this.platform });
-    });
-    this.endPanel.add([bg, title, detail, again, menu]);
+
+    const items: Phaser.GameObjects.GameObject[] = [bg, title, detail];
+    let y = 0.5;
+    if (victory && this.levelId < 5) {
+      items.push(
+        this.makeButton(width / 2, height * y, 'NEXT LEVEL', () => {
+          this.scene.start('Combat', {
+            platform: this.platform,
+            levelId: (this.levelId + 1) as LevelId,
+          });
+        }),
+      );
+      y += 0.09;
+    }
+    items.push(this.makeButton(width / 2, height * y, 'PLAY AGAIN', () => this.restartRun()));
+    y += 0.09;
+    items.push(
+      this.makeButton(width / 2, height * y, 'LEVEL SELECT', () => {
+        this.scene.start('LevelSelect', { platform: this.platform });
+      }),
+    );
+    this.endPanel.add(items);
   }
 
   private async persistRunResult(victory: boolean, towerHp: number): Promise<void> {
     const save = await this.platform.saves.load();
-    const next: SavePayload = {
-      ...save,
-      lastRunAt: Date.now(),
-      runsCompleted: save.runsCompleted + (victory ? 1 : 0),
-      bestTowerHpRemaining: victory
-        ? Math.max(save.bestTowerHpRemaining, Math.ceil(towerHp))
-        : save.bestTowerHpRemaining,
-    };
+    const next = victory
+      ? recordCampaignVictory(save, this.levelId, towerHp)
+      : { ...save, lastRunAt: Date.now() };
     await this.platform.saves.save(next);
     if (victory) {
-      await this.platform.leaderboards.submit(Math.ceil(towerHp));
+      await this.platform.leaderboards.submit(Math.ceil(towerHp) + this.levelId * 100);
     }
     this.platform.analytics.track(victory ? 'run_victory' : 'run_defeat', {
       towerHp: Math.ceil(towerHp),
+      level: this.levelId,
     });
   }
 
@@ -577,7 +839,7 @@ export class CombatScene extends Phaser.Scene {
     this.endPanel.removeAll(true).setVisible(false);
     this.pausePanel.setVisible(false);
     this.almanacPanel.setVisible(false);
-    this.run.start();
+    this.run.start(this.levelId);
   }
 }
 

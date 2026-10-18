@@ -21,11 +21,11 @@ npm run build
 npm run preview
 ```
 
-## Phase 1 scope (current)
+## Milestone 2 scope (current)
 
-Archer-only Level 1 combat prototype: central tower, 360° spawns, auto-attack, XP/upgrades, Elite + Raider Captain, pause, Almanac stub, browser adapters, CI/Pages.
+Archer campaign Levels 1–5: Runners/Brutes/Stone Golem, first Evolutions, data Codex, WebAudio SFX, campaign save unlocks. See `docs/PHASE_2_IMPLEMENTATION.md`.
 
-No Warrior / Mage / Rogue / gacha / base / Endless yet.
+No Warrior / Mage / Rogue / gacha / base / Endless / Yandex yet.
 
 ## GitHub Pages
 

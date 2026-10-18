@@ -4,6 +4,16 @@ export interface PlatformService {
   getLocale(): string;
 }
 
+export interface CampaignClearRecord {
+  bestTowerHp: number;
+  clears: number;
+}
+
+export interface CampaignSave {
+  highestUnlocked: number;
+  cleared: Record<string, CampaignClearRecord>;
+}
+
 export interface SavePayload {
   version: number;
   lastRunAt: number | null;
@@ -13,6 +23,7 @@ export interface SavePayload {
     sfxVolume: number;
     musicVolume: number;
   };
+  campaign: CampaignSave;
 }
 
 export interface SaveService {
@@ -55,7 +66,8 @@ export type AudioEvent =
   | 'almanac_open'
   | 'almanac_close'
   | 'victory'
-  | 'defeat';
+  | 'defeat'
+  | 'evolution';
 
 export interface AudioService {
   play(event: AudioEvent): void;

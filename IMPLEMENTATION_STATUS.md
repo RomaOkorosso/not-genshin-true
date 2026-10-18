@@ -1,33 +1,33 @@
 # Implementation Status
 
-Current state: **Phase 1 / Milestone 1 playable prototype implemented.**
+Current state: **Milestone 2 / Levels 1–5 vertical slice implemented.**
 
 ## Done
 
 - Vite + TypeScript + Phaser 3 project scaffold
 - Architecture modules: `core/`, `platform/`, `systems/`, `game/`, `ui` (in-scene)
-- Browser platform adapters (localStorage saves, mock ads/leaderboards, placeholder audio, analytics)
-- Data-driven balance: Archer stats, Level 1 upgrade pool, enemy defs, wave segments
-- Level 1 combat loop:
+- Browser platform adapters (localStorage saves v2 + campaign, mock ads/leaderboards, WebAudio SFX, analytics)
+- Data-driven balance: Archer stats, upgrade pools, enemies, Levels 1–5 waves
+- Campaign Level Select with linear unlock
+- Combat loop for Levels 1–5:
   - Archer on central tower (no manual movement)
   - 360° off-screen spawns → converge on tower
   - Auto-target nearest + auto-attack + pooled projectiles
-  - Grunt / Elite Grunt / Raider Captain (summon at 60% HP)
-  - XP + level-up (scripted first triad; weighted RNG after)
-  - Pause, Almanac stub, victory/defeat, restart cleanup
-  - Level-1-only emergency heal below ~20% tower HP
-- Object pooling for enemies & projectiles; delta clamp on tab resume
-- Vitest unit tests (13), ESLint, production build
+  - Grunt / Runner / Brute (+ elites) / Raider Captain / Stone Golem
+  - Archer branches through first Evolutions (Arrow Storm, Phantom Barrage, Deadeye Frenzy)
+  - XP + level-up (scripted first triad; weighted RNG after; Evolution bias on L4–5)
+  - Pause, data Codex/Almanac, victory/defeat, restart cleanup
+  - Level-1-only emergency heal; Golem phase hooks on Level 5
+- Object pooling; delta clamp on tab resume
+- Vitest unit tests, ESLint, production build
 - GitHub Actions workflow: lint → test → build → Pages artifact
 
-## Not done (intentionally out of Phase 1)
+## Not done (intentionally out of Milestone 2)
 
 - Warrior / Mage / Rogue
-- Evolutions, Super Nodes, Endless
-- Levels 2–5, Runner/Brute/Stone Golem
-- Full Almanac wiki content
-- Real audio assets / music
+- Super Nodes, Endless
 - Production sprite slicing from concept sheets
+- Real audio assets / music beds
 - Yandex SDK adapters
 - Meta: base, gacha, expeditions, relationships
 

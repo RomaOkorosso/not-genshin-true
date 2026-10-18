@@ -2,24 +2,26 @@ import { EventBus } from '../../core/events/EventBus';
 import { ObjectPool } from '../../core/pooling/ObjectPool';
 import { Rng } from '../../core/rng/Rng';
 import { TimerService } from '../../core/timers/TimerService';
-import { xpRequiredForLevel } from '../../game/balance/archer';
-import { TOWER_BASELINE } from '../../game/balance/archer';
+import { TOWER_BASELINE, xpRequiredForLevel } from '../../game/balance/archer';
 import type { EnemyId } from '../../game/balance/enemies';
-import type { UpgradeDef, UpgradeId } from '../../game/balance/upgrades';
+import type { UpgradeDef, UpgradeId, UpgradePoolId } from '../../game/balance/upgrades';
+import { getLevelDef, type LevelId } from '../../game/content/levels';
 import type { AudioService } from '../../platform/types';
-import {
-  applyUpgrade,
-  createBaseCombatStats,
-  type CombatStats,
-} from '../heroes/ArcherStats';
 import {
   createEnemy,
   resetEnemy,
   resetEnemyIdCounter,
   type EnemyModel,
 } from '../enemies/EnemyModel';
-import { rollUpgradeOffer } from '../upgrades/UpgradeOffer';
+import {
+  applyUpgrade,
+  createBaseCombatStats,
+  refreshAttackSpeed,
+  type CombatStats,
+} from '../heroes/ArcherStats';
+import { hasOfferableEvolution, rollUpgradeOffer } from '../upgrades/UpgradeOffer';
 import { WaveDirector } from '../waves/WaveDirector';
+import { multishotAngleOffsets } from './MultishotAim';
 import {
   createProjectile,
   deactivateProjectile,
@@ -27,13 +29,13 @@ import {
   resetProjectileIdCounter,
   type ProjectileModel,
 } from './ProjectileModel';
-import { multishotAngleOffsets } from './MultishotAim';
 import { nearestToTower, type TargetingStrategy } from './Targeting';
 
 export type RunPhase = 'combat' | 'levelup' | 'paused' | 'victory' | 'defeat';
 
 export interface RunSnapshot {
   phase: RunPhase;
+  levelId: LevelId;
   elapsedMs: number;
   durationMs: number;
   towerHp: number;
@@ -47,15 +49,17 @@ export interface RunSnapshot {
   killCount: number;
   bossAlive: boolean;
   emergencyUsed: boolean;
+  evolutionAvailable: boolean;
 }
 
 export interface RunEvents {
   onLevelUp: { level: number; offer: UpgradeDef[] };
-  onVictory: { towerHp: number; elapsedMs: number };
-  onDefeat: { elapsedMs: number };
+  onVictory: { towerHp: number; elapsedMs: number; levelId: LevelId };
+  onDefeat: { elapsedMs: number; levelId: LevelId };
   onEliteSpawn: { enemyId: EnemyId };
   onBossSpawn: { enemyId: EnemyId };
   onBossSummon: { count: number };
+  onEvolutionReady: Record<string, never>;
 }
 
 const ARENA = {
@@ -67,6 +71,7 @@ const ARENA = {
 } as const;
 
 const MAX_DELTA_MS = 50;
+const ARROW_STORM_INTERVAL = 5;
 
 export class RunController {
   readonly bus = new EventBus();
@@ -77,6 +82,10 @@ export class RunController {
   private stats: CombatStats = createBaseCombatStats();
   private owned = new Map<UpgradeId, number>();
   private phase: RunPhase = 'combat';
+  private levelId: LevelId = 1;
+  private upgradePoolId: UpgradePoolId = 'level1';
+  private emergencyHealEnabled = true;
+  private victoryBossId: EnemyId = 'raider_captain';
   private towerHp = TOWER_BASELINE.maxHp;
   private towerMaxHp = TOWER_BASELINE.maxHp;
   private heroLevel = 1;
@@ -88,6 +97,7 @@ export class RunController {
   private pendingOffer: UpgradeDef[] | null = null;
   private targeting: TargetingStrategy = nearestToTower;
   private victoryPending = false;
+  private arrowStormTimer = ARROW_STORM_INTERVAL;
 
   private readonly enemies: EnemyModel[] = [];
   private readonly projectiles: ProjectileModel[] = [];
@@ -99,24 +109,30 @@ export class RunController {
     seed?: number,
   ) {
     this.rng = new Rng(seed ?? Date.now() >>> 0);
-    this.waves = new WaveDirector(this.rng);
+    const def = getLevelDef(1);
+    this.waves = new WaveDirector(this.rng, def.segments, def.durationMs);
     this.enemyPool = new ObjectPool(
       () => createEnemy('grunt', 0, 0),
       (e) => {
         e.alive = false;
         e.state = 'dead';
       },
-      48,
+      64,
     );
-    this.projectilePool = new ObjectPool(createProjectile, deactivateProjectile, 64);
+    this.projectilePool = new ObjectPool(createProjectile, deactivateProjectile, 96);
   }
 
-  start(seed?: number): void {
+  start(levelId: LevelId = 1, seed?: number): void {
     this.cleanup();
     resetEnemyIdCounter();
     resetProjectileIdCounter();
+    const def = getLevelDef(levelId);
+    this.levelId = levelId;
+    this.upgradePoolId = def.upgradePoolId;
+    this.emergencyHealEnabled = def.emergencyHeal;
+    this.victoryBossId = def.victoryBossId;
     this.rng = new Rng(seed ?? Date.now() >>> 0);
-    this.waves = new WaveDirector(this.rng);
+    this.waves = new WaveDirector(this.rng, def.segments, def.durationMs);
     this.stats = createBaseCombatStats();
     this.owned.clear();
     this.phase = 'combat';
@@ -130,6 +146,7 @@ export class RunController {
     this.levelUpsCompleted = 0;
     this.pendingOffer = null;
     this.victoryPending = false;
+    this.arrowStormTimer = ARROW_STORM_INTERVAL;
     this.timers.setWorldPaused(false);
   }
 
@@ -146,6 +163,10 @@ export class RunController {
     return this.phase;
   }
 
+  getLevelId(): LevelId {
+    return this.levelId;
+  }
+
   getEnemies(): readonly EnemyModel[] {
     return this.enemies;
   }
@@ -158,6 +179,14 @@ export class RunController {
     return this.stats;
   }
 
+  getOwned(): Map<UpgradeId, number> {
+    return this.owned;
+  }
+
+  getUpgradePoolId(): UpgradePoolId {
+    return this.upgradePoolId;
+  }
+
   getArena() {
     return ARENA;
   }
@@ -165,6 +194,7 @@ export class RunController {
   snapshot(): RunSnapshot {
     return {
       phase: this.phase,
+      levelId: this.levelId,
       elapsedMs: this.waves.getElapsedMs(),
       durationMs: this.waves.getDurationMs(),
       towerHp: this.towerHp,
@@ -178,6 +208,7 @@ export class RunController {
       killCount: this.killCount,
       bossAlive: this.enemies.some((e) => e.alive && e.def.boss),
       emergencyUsed: this.emergencyUsed,
+      evolutionAvailable: hasOfferableEvolution(this.owned, this.upgradePoolId),
     };
   }
 
@@ -189,10 +220,6 @@ export class RunController {
       this.phase = 'combat';
       this.timers.setWorldPaused(false);
     }
-  }
-
-  isSimulating(): boolean {
-    return this.phase === 'combat';
   }
 
   chooseUpgrade(upgradeId: UpgradeId): void {
@@ -222,21 +249,21 @@ export class RunController {
   update(rawDeltaMs: number): void {
     const deltaMs = Math.min(Math.max(rawDeltaMs, 0), MAX_DELTA_MS);
     if (this.phase === 'victory' || this.phase === 'defeat') return;
-    if (this.phase === 'paused' || this.phase === 'levelup') {
-      return;
-    }
+    if (this.phase === 'paused' || this.phase === 'levelup') return;
 
+    const dt = deltaMs / 1000;
     this.timers.update(deltaMs);
     this.spawnFromWaves(deltaMs);
-    this.updateEnemies(deltaMs / 1000);
-    this.updateAttack(deltaMs / 1000);
-    this.updateProjectiles(deltaMs / 1000);
+    this.updateFrenzy(dt);
+    this.updateArrowStorm(dt);
+    this.updateEnemies(dt);
+    this.updateAttack(dt);
+    this.updateProjectiles(dt);
     this.checkEndConditions();
   }
 
   private spawnFromWaves(deltaMs: number): void {
-    const requests = this.waves.update(deltaMs);
-    for (const req of requests) {
+    for (const req of this.waves.update(deltaMs)) {
       this.spawnEnemy(req.enemyId, req.angle);
     }
   }
@@ -261,6 +288,37 @@ export class RunController {
     return enemy;
   }
 
+  private updateFrenzy(dt: number): void {
+    if (!this.stats.deadeyeFrenzy) return;
+    if (this.stats.frenzyTimer > 0) {
+      this.stats.frenzyTimer -= dt;
+      if (this.stats.frenzyTimer <= 0) {
+        this.stats.frenzyStacks = 0;
+        this.stats.frenzyTimer = 0;
+        refreshAttackSpeed(this.stats);
+      }
+    }
+  }
+
+  private updateArrowStorm(dt: number): void {
+    if (!this.stats.arrowStormEnabled) return;
+    this.arrowStormTimer -= dt;
+    if (this.arrowStormTimer > 0) return;
+    this.arrowStormTimer = ARROW_STORM_INTERVAL;
+    const target = this.targeting(ARENA.centerX, ARENA.centerY, this.stats.range, this.enemies);
+    const baseAngle = target
+      ? Math.atan2(target.y - ARENA.centerY, target.x - ARENA.centerX)
+      : this.rng.range(0, Math.PI * 2);
+    const fan = 8;
+    const spread = (Math.PI * 2) / 3;
+    for (let i = 0; i < fan; i++) {
+      const t = i / (fan - 1);
+      const angle = baseAngle - spread / 2 + t * spread;
+      this.spawnProjectile(angle, this.stats.damage * this.stats.projectileDamageMult * 0.65, false);
+    }
+    this.audio.play('archer_shot');
+  }
+
   private updateEnemies(dt: number): void {
     const cx = ARENA.centerX;
     const cy = ARENA.centerY;
@@ -275,18 +333,20 @@ export class RunController {
       }
 
       if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt);
+      this.updateBossPhases(e, dt);
 
       const dx = cx - e.x;
       const dy = cy - e.y;
       const dist = Math.hypot(dx, dy) || 1;
       const stopDist = towerR + e.def.radius;
+      const speed = e.def.moveSpeed * e.moveSpeedMult;
 
       if (e.state === 'moving') {
         if (dist <= stopDist) {
           e.state = 'winding_up';
           e.windupRemaining = e.def.attackWindupMs / 1000;
         } else {
-          const step = e.def.moveSpeed * dt;
+          const step = speed * dt;
           e.x += (dx / dist) * step;
           e.y += (dy / dist) * step;
         }
@@ -315,8 +375,51 @@ export class RunController {
         const count = e.def.summonCount ?? 0;
         const summonId = e.def.summonEnemyId ?? 'grunt';
         for (let s = 0; s < count; s++) {
-          const a = this.rng.range(0, Math.PI * 2);
-          this.spawnEnemy(summonId, a);
+          this.spawnEnemy(summonId, this.rng.range(0, Math.PI * 2));
+        }
+        this.bus.emit<RunEvents['onBossSummon']>('boss_summon', { count });
+      }
+    }
+  }
+
+  private updateBossPhases(e: EnemyModel, dt: number): void {
+    if (e.stoneSkinActive) {
+      e.stoneSkinTimer -= dt;
+      if (e.stoneSkinTimer <= 0) {
+        e.stoneSkinActive = false;
+        e.damageTakenMult = 1;
+      }
+    }
+
+    if (
+      e.def.stoneSkinAtRatio !== undefined &&
+      !e.stoneSkinTriggered &&
+      e.hp / e.maxHp <= e.def.stoneSkinAtRatio
+    ) {
+      e.stoneSkinTriggered = true;
+      e.stoneSkinActive = true;
+      e.stoneSkinTimer = (e.def.stoneSkinDurationMs ?? 8000) / 1000;
+      e.damageTakenMult = e.def.stoneSkinDamageTakenMult ?? 0.4;
+    }
+
+    if (
+      e.def.finalPushAtRatio !== undefined &&
+      !e.finalPushTriggered &&
+      e.hp / e.maxHp <= e.def.finalPushAtRatio
+    ) {
+      e.finalPushTriggered = true;
+      e.moveSpeedMult = e.def.finalPushSpeedMult ?? 1.6;
+    }
+
+    if (e.def.periodicSummonMs && e.def.periodicSummonIds?.length) {
+      e.periodicSummonTimer -= dt;
+      if (e.periodicSummonTimer <= 0) {
+        e.periodicSummonTimer = e.def.periodicSummonMs / 1000;
+        const count = e.def.periodicSummonCount ?? 2;
+        for (let s = 0; s < count; s++) {
+          const id =
+            e.def.periodicSummonIds[this.rng.int(0, e.def.periodicSummonIds.length)] ?? 'grunt';
+          this.spawnEnemy(id, this.rng.range(0, Math.PI * 2));
         }
         this.bus.emit<RunEvents['onBossSummon']>('boss_summon', { count });
       }
@@ -326,6 +429,7 @@ export class RunController {
   private applyTowerDamage(amount: number): void {
     this.towerHp = Math.max(0, this.towerHp - amount);
     if (
+      this.emergencyHealEnabled &&
       !this.emergencyUsed &&
       this.towerHp > 0 &&
       this.towerHp / this.towerMaxHp < TOWER_BASELINE.emergencyHpRatio
@@ -342,6 +446,7 @@ export class RunController {
       this.audio.play('defeat');
       this.bus.emit<RunEvents['onDefeat']>('defeat', {
         elapsedMs: this.waves.getElapsedMs(),
+        levelId: this.levelId,
       });
     }
   }
@@ -359,41 +464,64 @@ export class RunController {
     if (!target) return;
 
     this.attackCooldown = 1 / this.stats.attacksPerSecond;
-    this.fireAt(target.x, target.y);
+    this.stats.attackCounter += 1;
+    this.fireVolleyAt(target.x, target.y);
     this.audio.play('archer_shot');
   }
 
-  private fireAt(tx: number, ty: number): void {
-    const cx = ARENA.centerX;
-    const cy = ARENA.centerY;
-    // Aim radially from tower center — enemies walk along the same rays.
-    const baseAngle = Math.atan2(ty - cy, tx - cx);
-    const count = this.stats.projectileCount;
+  private fireVolleyAt(tx: number, ty: number): void {
+    const baseAngle = Math.atan2(ty - ARENA.centerY, tx - ARENA.centerX);
+    let count = this.stats.projectileCount;
+    let bonusDamageMult = 1;
+    if (this.stats.volleyEnabled && this.stats.attackCounter % 6 === 0) {
+      count += 3;
+      bonusDamageMult = 0.7;
+    }
     const spreadRad = (this.stats.spreadDegrees * Math.PI) / 180;
     const offsets = multishotAngleOffsets(count, spreadRad);
-    /** Muzzle sits on the fire ray so the path shares the enemy's radial line. */
-    const muzzle = 44;
-
     for (const offset of offsets) {
-      const angle = baseAngle + offset;
       const crit = this.rng.next() < this.stats.critChance;
       const damage =
         this.stats.damage *
         this.stats.projectileDamageMult *
+        bonusDamageMult *
         (crit ? this.stats.critMultiplier : 1);
-      const p = this.projectilePool.acquire();
-      launchProjectile(p, {
-        x: cx + Math.cos(angle) * muzzle,
-        y: cy + Math.sin(angle) * muzzle,
-        angle,
-        speed: this.stats.projectileSpeed,
-        damage,
-        crit,
-        pierce: this.stats.pierceCount,
-        pierceFalloff: this.stats.pierceDamageFalloff,
-      });
-      this.projectiles.push(p);
+      this.spawnProjectile(baseAngle + offset, damage, crit);
+      if (crit) this.onCrit();
     }
+  }
+
+  private spawnProjectile(angle: number, damage: number, crit: boolean): void {
+    const muzzle = 44;
+    const cx = ARENA.centerX;
+    const cy = ARENA.centerY;
+    const pierce =
+      this.stats.phantomBarrage || this.stats.ricochetCount === 0
+        ? this.stats.pierceCount
+        : this.stats.pierceCount;
+    const ricochet = this.stats.ricochetCount;
+    const p = this.projectilePool.acquire();
+    launchProjectile(p, {
+      x: cx + Math.cos(angle) * muzzle,
+      y: cy + Math.sin(angle) * muzzle,
+      angle,
+      speed: this.stats.projectileSpeed,
+      damage,
+      crit,
+      pierce,
+      pierceFalloff: this.stats.pierceDamageFalloff,
+      ricochet,
+      ricochetDamageMult: this.stats.ricochetDamageMult,
+      allowPierceWithRicochet: this.stats.phantomBarrage,
+    });
+    this.projectiles.push(p);
+  }
+
+  private onCrit(): void {
+    if (!this.stats.deadeyeFrenzy) return;
+    this.stats.frenzyStacks = Math.min(5, this.stats.frenzyStacks + 1);
+    this.stats.frenzyTimer = 3;
+    refreshAttackSpeed(this.stats);
   }
 
   private updateProjectiles(dt: number): void {
@@ -426,23 +554,54 @@ export class RunController {
         p.hitIds.add(e.id);
         this.damageEnemy(e, p.damage, p.crit);
 
-        if (p.pierceRemaining > 0) {
+        const canPierce = p.pierceRemaining > 0;
+        if (canPierce) {
           p.pierceRemaining -= 1;
           p.damage *= 1 - p.pierceFalloff;
-        } else {
-          deactivateProjectile(p);
-          this.projectilePool.release(p);
-          this.projectiles.splice(i, 1);
-          consumed = true;
-          break;
+          continue;
         }
+
+        if (p.ricochetRemaining > 0) {
+          const bounceIndex = p.ricochetDamageMult.length - p.ricochetRemaining;
+          const mult = p.ricochetDamageMult[Math.max(0, bounceIndex)] ?? 0.55;
+          p.ricochetRemaining -= 1;
+          p.damage *= mult;
+          const next = this.findRicochetTarget(e, p.hitIds);
+          if (next) {
+            const angle = Math.atan2(next.y - p.y, next.x - p.x);
+            const speed = Math.hypot(p.vx, p.vy) || this.stats.projectileSpeed;
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed;
+            continue;
+          }
+        }
+
+        deactivateProjectile(p);
+        this.projectilePool.release(p);
+        this.projectiles.splice(i, 1);
+        consumed = true;
+        break;
       }
       if (consumed) continue;
     }
   }
 
+  private findRicochetTarget(from: EnemyModel, hitIds: Set<number>): EnemyModel | null {
+    let best: EnemyModel | null = null;
+    let bestDist = Infinity;
+    for (const e of this.enemies) {
+      if (!e.alive || e.id === from.id || hitIds.has(e.id)) continue;
+      const d = Math.hypot(e.x - from.x, e.y - from.y);
+      if (d < bestDist && d < 280) {
+        best = e;
+        bestDist = d;
+      }
+    }
+    return best;
+  }
+
   private damageEnemy(e: EnemyModel, damage: number, crit: boolean): void {
-    e.hp -= damage;
+    e.hp -= damage * e.damageTakenMult;
     e.hitFlash = 0.12;
     this.audio.play(crit ? 'crit_hit' : 'hit');
     if (e.hp <= 0) {
@@ -450,9 +609,21 @@ export class RunController {
       e.state = 'dead';
       this.killCount += 1;
       this.audio.play('enemy_death');
-      this.grantXp(e.def.xp);
-      if (e.def.boss) {
+      if (e.defId === this.victoryBossId) {
+        // Winning kill: credit XP without pausing for a post-victory level-up.
+        this.xp += e.def.xp * this.stats.xpGainMult;
         this.victoryPending = true;
+        this.pendingOffer = null;
+        this.phase = 'victory';
+        this.timers.setWorldPaused(true);
+        this.audio.play('victory');
+        this.bus.emit<RunEvents['onVictory']>('victory', {
+          towerHp: this.towerHp,
+          elapsedMs: this.waves.getElapsedMs(),
+          levelId: this.levelId,
+        });
+      } else {
+        this.grantXp(e.def.xp);
       }
     }
   }
@@ -468,12 +639,21 @@ export class RunController {
   }
 
   private openLevelUp(): void {
-    const offer = rollUpgradeOffer(this.owned, this.levelUpsCompleted, this.rng, 3);
+    const offer = rollUpgradeOffer(
+      this.owned,
+      this.levelUpsCompleted,
+      this.rng,
+      3,
+      this.upgradePoolId,
+    );
     if (offer.length === 0) return;
     this.pendingOffer = offer;
     this.phase = 'levelup';
     this.timers.setWorldPaused(true);
     this.audio.play('level_up');
+    if (offer.some((u) => u.evolution)) {
+      this.bus.emit<RunEvents['onEvolutionReady']>('evolution_ready', {});
+    }
     this.bus.emit<RunEvents['onLevelUp']>('level_up', {
       level: this.heroLevel,
       offer,
@@ -484,7 +664,7 @@ export class RunController {
     if (this.phase !== 'combat') return;
 
     if (this.victoryPending) {
-      const bossAlive = this.enemies.some((e) => e.alive && e.def.boss);
+      const bossAlive = this.enemies.some((e) => e.alive && e.defId === this.victoryBossId);
       if (!bossAlive) {
         this.phase = 'victory';
         this.timers.setWorldPaused(true);
@@ -492,39 +672,31 @@ export class RunController {
         this.bus.emit<RunEvents['onVictory']>('victory', {
           towerHp: this.towerHp,
           elapsedMs: this.waves.getElapsedMs(),
+          levelId: this.levelId,
         });
       }
-    }
-
-    // If time is up and captain never spawned somehow, still allow clear of remaining.
-    if (this.waves.isTimeUp() && this.enemies.every((e) => !e.alive || !e.def.boss)) {
-      // Wait for captain kill primarily; if somehow no boss left after time, win when field clear
-      // after captain was killed (victoryPending) — handled above.
     }
   }
 
   private outOfBounds(x: number, y: number): boolean {
     const pad = 120;
-    return (
-      x < -pad ||
-      y < -pad ||
-      x > ARENA.width + pad ||
-      y > ARENA.height + pad
-    );
+    return x < -pad || y < -pad || x > ARENA.width + pad || y > ARENA.height + pad;
   }
 
-  /** Test helper: force XP grant. */
   debugGrantXp(amount: number): void {
     this.grantXp(amount);
   }
 
-  /** Test helper: force tower damage. */
   debugDamageTower(amount: number): void {
     this.applyTowerDamage(amount);
   }
+
+  /** Test helper: apply damage through the normal damage path (victory / phases). */
+  debugDamageEnemy(enemy: EnemyModel, amount: number): void {
+    this.damageEnemy(enemy, amount, false);
+  }
 }
 
-/** Swept circle vs segment — prevents tunneling at large dt. */
 export function segmentHitsCircle(
   x1: number,
   y1: number,

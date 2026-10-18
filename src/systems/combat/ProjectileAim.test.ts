@@ -23,7 +23,7 @@ describe('radial projectile aim', () => {
     const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4, Math.PI, -Math.PI / 3];
     for (const angle of angles) {
       const run = new RunController(silentAudio, 42);
-      run.start(42);
+      run.start(1, 42);
       const enemy = run.spawnEnemy('grunt', angle);
       // Place inside range on the radial line.
       const dist = 200;

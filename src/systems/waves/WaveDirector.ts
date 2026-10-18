@@ -1,7 +1,7 @@
 import type { Rng } from '../../core/rng/Rng';
 import type { EnemyId } from '../../game/balance/enemies';
 import { ENEMY_DEFS } from '../../game/balance/enemies';
-import type { WaveSegment } from '../../game/balance/level1Waves';
+import type { WaveSegment } from '../../game/balance/waves';
 import { LEVEL1_DURATION_MS, LEVEL1_SEGMENTS } from '../../game/balance/level1Waves';
 
 export interface SpawnRequest {
@@ -22,9 +22,15 @@ export class WaveDirector {
   private readonly runtimes: SegmentRuntime[];
   private finished = false;
   private rng: Rng;
+  private durationMs: number;
 
-  constructor(rng: Rng, segments: WaveSegment[] = LEVEL1_SEGMENTS) {
+  constructor(
+    rng: Rng,
+    segments: WaveSegment[] = LEVEL1_SEGMENTS,
+    durationMs: number = LEVEL1_DURATION_MS,
+  ) {
     this.rng = rng;
+    this.durationMs = durationMs;
     this.runtimes = segments.map((segment) => ({
       segment,
       budgetSpent: 0,
@@ -51,11 +57,11 @@ export class WaveDirector {
   }
 
   getDurationMs(): number {
-    return LEVEL1_DURATION_MS;
+    return this.durationMs;
   }
 
   isTimeUp(): boolean {
-    return this.elapsedMs >= LEVEL1_DURATION_MS;
+    return this.elapsedMs >= this.durationMs;
   }
 
   isFinished(): boolean {
@@ -111,7 +117,7 @@ export class WaveDirector {
       }
     }
 
-    if (this.elapsedMs >= LEVEL1_DURATION_MS) {
+    if (this.elapsedMs >= this.durationMs) {
       this.finished = true;
     }
 

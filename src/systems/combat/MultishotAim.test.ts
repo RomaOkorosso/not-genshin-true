@@ -28,7 +28,7 @@ describe('multishotAngleOffsets', () => {
 describe('multishot primary hits lock target', () => {
   it('kills a radial grunt with Multishot I (even shot count)', () => {
     const run = new RunController(silentAudio, 7);
-    run.start(7);
+    run.start(1, 7);
     applyUpgrade(run.getStats(), 'multishot_i');
     // Mirror into runtime stats object the controller already holds.
     const stats = run.getStats();

@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -31,6 +31,9 @@
       canvas {
         display: block;
         margin: 0 auto;
+        /* Smooth canvas scale so Nunito body copy stays readable on mobile FIT.
+           Sprite textures still use NEAREST via Phaser pixelArt / texture filters. */
+        image-rendering: auto !important;
       }
     </style>
   </head>

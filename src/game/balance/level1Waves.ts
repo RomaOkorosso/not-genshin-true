@@ -1,22 +1,8 @@
-import type { EnemyId } from './enemies';
+import type { WaveSegment } from './waves';
 
-export interface WaveSegment {
-  id: string;
-  /** Segment start time in ms from run start. */
-  startMs: number;
-  durationMs: number;
-  spawnBudget: number;
-  spawnIntervalMs: number;
-  enemyWeights: { id: EnemyId; weight: number }[];
-  groupSize: { min: number; max: number };
-  /** Explicit one-shot elite/boss hooks at offset from segment start. */
-  events?: { atMs: number; enemyId: EnemyId; count: number }[];
-}
+export type { WaveSegment } from './waves';
 
-/**
- * ~8 minute Level 1, data-driven segments.
- * Tuned for high completion rate for first-time players.
- */
+/** ~8 minute Level 1. */
 export const LEVEL1_SEGMENTS: WaveSegment[] = [
   {
     id: 'intro',

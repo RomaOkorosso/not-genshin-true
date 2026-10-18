@@ -8,8 +8,17 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.generateTextures();
+    this.forceNearestSpriteFiltering();
     const platform = this.registry.get('platform');
     this.scene.start('Menu', { platform });
+  }
+
+  /** Keep placeholder sprites crisp while canvas antialias helps UI text. */
+  private forceNearestSpriteFiltering(): void {
+    for (const key of this.textures.getTextureKeys()) {
+      if (key === '__DEFAULT' || key === '__MISSING') continue;
+      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
   }
 
   private generateTextures(): void {
@@ -69,6 +78,11 @@ export class BootScene extends Phaser.Scene {
     this.makeEnemy(g, 'enemy_grunt', 0xe8a06e, 0x5d4037, 28, false);
     this.makeEnemy(g, 'enemy_elite_grunt', 0xffb74d, 0xef6c00, 36, true);
     this.makeEnemy(g, 'enemy_raider_captain', 0xe53935, 0xb71c1c, 52, true, true);
+    this.makeEnemy(g, 'enemy_runner', 0x7e57c2, 0x4527a0, 24, false);
+    this.makeEnemy(g, 'enemy_elite_runner', 0xb39ddb, 0x5e35b1, 30, true);
+    this.makeEnemy(g, 'enemy_brute', 0x8d6e63, 0x4e342e, 34, false);
+    this.makeEnemy(g, 'enemy_elite_brute', 0xa1887f, 0x3e2723, 42, true);
+    this.makeEnemy(g, 'enemy_stone_golem', 0x90a4ae, 0x37474f, 64, true, true);
 
     // Projectiles — high-contrast yellow
     g.fillStyle(0x1a1a1a, 1);

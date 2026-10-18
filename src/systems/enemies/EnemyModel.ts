@@ -17,6 +17,13 @@ export interface EnemyModel {
   windupRemaining: number;
   summonTriggered: boolean;
   hitFlash: number;
+  moveSpeedMult: number;
+  damageTakenMult: number;
+  stoneSkinActive: boolean;
+  stoneSkinTimer: number;
+  stoneSkinTriggered: boolean;
+  finalPushTriggered: boolean;
+  periodicSummonTimer: number;
 }
 
 let nextEnemyId = 1;
@@ -41,6 +48,13 @@ export function createEnemy(defId: EnemyId, x: number, y: number): EnemyModel {
     windupRemaining: 0,
     summonTriggered: false,
     hitFlash: 0,
+    moveSpeedMult: 1,
+    damageTakenMult: 1,
+    stoneSkinActive: false,
+    stoneSkinTimer: 0,
+    stoneSkinTriggered: false,
+    finalPushTriggered: false,
+    periodicSummonTimer: def.periodicSummonMs ? def.periodicSummonMs / 1000 : 0,
   };
 }
 
@@ -59,4 +73,11 @@ export function resetEnemy(enemy: EnemyModel, defId: EnemyId, x: number, y: numb
   enemy.windupRemaining = 0;
   enemy.summonTriggered = false;
   enemy.hitFlash = 0;
+  enemy.moveSpeedMult = 1;
+  enemy.damageTakenMult = 1;
+  enemy.stoneSkinActive = false;
+  enemy.stoneSkinTimer = 0;
+  enemy.stoneSkinTriggered = false;
+  enemy.finalPushTriggered = false;
+  enemy.periodicSummonTimer = def.periodicSummonMs ? def.periodicSummonMs / 1000 : 0;
 }

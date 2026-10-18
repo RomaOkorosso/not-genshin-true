@@ -11,7 +11,7 @@ const silentAudio: AudioService = {
 describe('RunController', () => {
   it('opens scripted level-up after enough XP', () => {
     const run = new RunController(silentAudio, 123);
-    run.start(123);
+    run.start(1, 123);
     run.debugGrantXp(5);
     expect(run.getPhase()).toBe('levelup');
     const snap = run.snapshot();
@@ -39,10 +39,10 @@ describe('RunController', () => {
 
   it('clears pools on restart', () => {
     const run = new RunController(silentAudio, 5);
-    run.start(5);
+    run.start(1, 5);
     run.spawnEnemy('grunt', 0);
     expect(run.getEnemies().length).toBe(1);
-    run.start(5);
+    run.start(1, 5);
     expect(run.getEnemies().length).toBe(0);
     expect(run.getProjectiles().length).toBe(0);
     run.cleanup();
@@ -50,10 +50,46 @@ describe('RunController', () => {
 
   it('defeats when tower HP reaches zero after emergency', () => {
     const run = new RunController(silentAudio, 2);
-    run.start(2);
+    run.start(1, 2);
     run.debugDamageTower(85);
     run.debugDamageTower(200);
     expect(run.getPhase()).toBe('defeat');
+    run.cleanup();
+  });
+
+  it('does not emergency-heal on level 2', () => {
+    const run = new RunController(silentAudio, 3);
+    run.start(2, 3);
+    run.debugDamageTower(85);
+    expect(run.snapshot().emergencyUsed).toBe(false);
+    expect(run.snapshot().towerHp).toBe(15);
+    run.cleanup();
+  });
+
+  it('triggers Stone Golem Stone Skin and Final Push phases', () => {
+    const run = new RunController(silentAudio, 9);
+    run.start(5, 9);
+    const golem = run.spawnEnemy('stone_golem', 0);
+    golem.hp = golem.maxHp * 0.5;
+    run.update(16);
+    expect(golem.stoneSkinTriggered).toBe(true);
+    expect(golem.stoneSkinActive).toBe(true);
+    expect(golem.damageTakenMult).toBeLessThan(1);
+
+    golem.hp = golem.maxHp * 0.2;
+    run.update(16);
+    expect(golem.finalPushTriggered).toBe(true);
+    expect(golem.moveSpeedMult).toBeGreaterThan(1);
+    run.cleanup();
+  });
+
+  it('wins level 5 when the Stone Golem dies', () => {
+    const run = new RunController(silentAudio, 11);
+    run.start(5, 11);
+    const golem = run.spawnEnemy('stone_golem', 0);
+    run.debugDamageEnemy(golem, 99999);
+    run.update(16);
+    expect(run.getPhase()).toBe('victory');
     run.cleanup();
   });
 });

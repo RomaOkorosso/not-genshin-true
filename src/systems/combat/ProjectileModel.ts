@@ -9,9 +9,12 @@ export interface ProjectileModel {
   crit: boolean;
   pierceRemaining: number;
   pierceFalloff: number;
+  ricochetRemaining: number;
+  ricochetDamageMult: number[];
   hitIds: Set<number>;
   lifetime: number;
   radius: number;
+  allowPierceWithRicochet: boolean;
 }
 
 let nextProjectileId = 1;
@@ -32,9 +35,12 @@ export function createProjectile(): ProjectileModel {
     crit: false,
     pierceRemaining: 0,
     pierceFalloff: 0,
+    ricochetRemaining: 0,
+    ricochetDamageMult: [],
     hitIds: new Set(),
     lifetime: 0,
     radius: 6,
+    allowPierceWithRicochet: false,
   };
 }
 
@@ -49,6 +55,9 @@ export function launchProjectile(
     crit: boolean;
     pierce: number;
     pierceFalloff: number;
+    ricochet?: number;
+    ricochetDamageMult?: number[];
+    allowPierceWithRicochet?: boolean;
     lifetime?: number;
   },
 ): void {
@@ -62,9 +71,12 @@ export function launchProjectile(
   p.crit = opts.crit;
   p.pierceRemaining = opts.pierce;
   p.pierceFalloff = opts.pierceFalloff;
+  p.ricochetRemaining = opts.ricochet ?? 0;
+  p.ricochetDamageMult = opts.ricochetDamageMult ?? [];
   p.hitIds.clear();
   p.lifetime = opts.lifetime ?? 2.5;
   p.radius = 6;
+  p.allowPierceWithRicochet = opts.allowPierceWithRicochet ?? false;
 }
 
 export function deactivateProjectile(p: ProjectileModel): void {

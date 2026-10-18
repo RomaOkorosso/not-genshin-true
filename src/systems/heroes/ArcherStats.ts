@@ -4,24 +4,34 @@ import type { UpgradeId } from '../../game/balance/upgrades';
 export interface CombatStats {
   damage: number;
   attacksPerSecond: number;
+  baseAttacksPerSecond: number;
   critChance: number;
   critMultiplier: number;
   projectileCount: number;
-  /** Multiplier applied to each projectile's damage (multishot falloff). */
   projectileDamageMult: number;
   projectileSpeed: number;
   range: number;
   spreadDegrees: number;
   pierceCount: number;
   pierceDamageFalloff: number;
+  ricochetCount: number;
+  ricochetDamageMult: number[];
   towerMaxHp: number;
   xpGainMult: number;
+  volleyEnabled: boolean;
+  arrowStormEnabled: boolean;
+  phantomBarrage: boolean;
+  deadeyeFrenzy: boolean;
+  attackCounter: number;
+  frenzyStacks: number;
+  frenzyTimer: number;
 }
 
 export function createBaseCombatStats(): CombatStats {
   return {
     damage: ARCHER_BASELINE.damage,
     attacksPerSecond: ARCHER_BASELINE.attacksPerSecond,
+    baseAttacksPerSecond: ARCHER_BASELINE.attacksPerSecond,
     critChance: ARCHER_BASELINE.critChance,
     critMultiplier: ARCHER_BASELINE.critMultiplier,
     projectileCount: ARCHER_BASELINE.projectileCount,
@@ -31,9 +41,23 @@ export function createBaseCombatStats(): CombatStats {
     spreadDegrees: ARCHER_BASELINE.spreadDegrees,
     pierceCount: ARCHER_BASELINE.pierceCount,
     pierceDamageFalloff: ARCHER_BASELINE.pierceDamageFalloff,
+    ricochetCount: 0,
+    ricochetDamageMult: [],
     towerMaxHp: TOWER_BASELINE.maxHp,
     xpGainMult: 1,
+    volleyEnabled: false,
+    arrowStormEnabled: false,
+    phantomBarrage: false,
+    deadeyeFrenzy: false,
+    attackCounter: 0,
+    frenzyStacks: 0,
+    frenzyTimer: 0,
   };
+}
+
+export function refreshAttackSpeed(stats: CombatStats): void {
+  const frenzyBonus = stats.deadeyeFrenzy ? 1 + stats.frenzyStacks * 0.04 : 1;
+  stats.attacksPerSecond = stats.baseAttacksPerSecond * frenzyBonus;
 }
 
 export function applyUpgrade(stats: CombatStats, upgradeId: UpgradeId): void {
@@ -50,12 +74,25 @@ export function applyUpgrade(stats: CombatStats, upgradeId: UpgradeId): void {
       stats.spreadDegrees *= 0.7;
       stats.projectileDamageMult *= 1.05;
       break;
+    case 'volley':
+      stats.volleyEnabled = true;
+      break;
+    case 'arrow_storm':
+      stats.arrowStormEnabled = true;
+      break;
     case 'quick_draw':
     case 'quick_draw_ii':
-      stats.attacksPerSecond *= 1.15;
+      stats.baseAttacksPerSecond *= 1.15;
+      refreshAttackSpeed(stats);
       break;
     case 'critical_eye':
       stats.critChance += 0.1;
+      break;
+    case 'deadly_precision':
+      stats.critMultiplier = 1.75;
+      break;
+    case 'deadeye_frenzy':
+      stats.deadeyeFrenzy = true;
       break;
     case 'sharpened_arrows_i':
     case 'sharpened_arrows_ii':
@@ -66,19 +103,31 @@ export function applyUpgrade(stats: CombatStats, upgradeId: UpgradeId): void {
       stats.pierceCount += 1;
       stats.pierceDamageFalloff = 0.15;
       break;
+    case 'piercing_ii':
+      stats.pierceCount += 1;
+      stats.pierceDamageFalloff = 0.12;
+      break;
+    case 'ricochet_i':
+      stats.ricochetCount = Math.max(stats.ricochetCount, 1);
+      stats.ricochetDamageMult = [0.7];
+      break;
+    case 'ricochet_ii':
+      stats.ricochetCount = Math.max(stats.ricochetCount, 2);
+      stats.ricochetDamageMult = [0.7, 0.55];
+      break;
+    case 'phantom_barrage':
+      stats.phantomBarrage = true;
+      stats.projectileSpeed *= 1.15;
+      stats.projectileDamageMult *= 1.1;
+      break;
     case 'reinforced_tower':
       stats.towerMaxHp = Math.round(stats.towerMaxHp * 1.15);
       break;
     case 'emergency_repair':
-      // Instant heal handled by run controller.
       break;
     default: {
       const _exhaustive: never = upgradeId;
       void _exhaustive;
     }
   }
-}
-
-export function ownedUpgradeIds(owned: Map<UpgradeId, number>): UpgradeId[] {
-  return [...owned.keys()];
 }
