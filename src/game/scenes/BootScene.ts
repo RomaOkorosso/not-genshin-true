@@ -1,19 +1,61 @@
 import Phaser from 'phaser';
 
-/** Generates readable runtime placeholder textures until concept sheets are sliced. */
+/** Runtime PNG keys under `public/assets/runtime/` (see docs/RUNTIME_SPRITES.md). */
+const RUNTIME_SPRITE_KEYS = [
+  'archer',
+  'archer_attack',
+  'enemy_grunt',
+  'enemy_grunt_attack',
+  'tower',
+  // tile_grass extract is a decorative patch, not a seamless 64 tile — keep procedural.
+  'codex_btn',
+  'hit_spark',
+  'death_puff',
+] as const;
+
+/**
+ * Generates procedural placeholder textures, then overlays extracted runtime
+ * sprites when present. Combat keeps the same texture keys either way.
+ */
 export class BootScene extends Phaser.Scene {
+  private failedRuntime = new Set<string>();
+
   constructor() {
     super('Boot');
   }
 
+  preload(): void {
+    const base = import.meta.env.BASE_URL || '/';
+    this.load.on('loaderror', (file: { key?: string }) => {
+      if (typeof file?.key === 'string' && file.key.startsWith('runtime_')) {
+        this.failedRuntime.add(file.key.slice('runtime_'.length));
+      }
+    });
+    for (const key of RUNTIME_SPRITE_KEYS) {
+      this.load.image(`runtime_${key}`, `${base}assets/runtime/${key}.png`);
+    }
+  }
+
   create(): void {
     this.generateTextures();
+    this.applyRuntimeSprites();
     this.forceNearestSpriteFiltering();
     const platform = this.registry.get('platform');
     this.scene.start('Menu', { platform });
   }
 
-  /** Keep placeholder sprites crisp while canvas antialias helps UI text. */
+  private applyRuntimeSprites(): void {
+    for (const key of RUNTIME_SPRITE_KEYS) {
+      const runtimeKey = `runtime_${key}`;
+      if (this.failedRuntime.has(key) || !this.textures.exists(runtimeKey)) continue;
+      if (this.textures.exists(key)) {
+        this.textures.remove(key);
+      }
+      this.textures.renameTexture(runtimeKey, key);
+    }
+  }
+
+  /** Keep sprites crisp while canvas antialias helps UI text. */
   private forceNearestSpriteFiltering(): void {
     for (const key of this.textures.getTextureKeys()) {
       if (key === '__DEFAULT' || key === '__MISSING') continue;
@@ -25,7 +67,6 @@ export class BootScene extends Phaser.Scene {
     const g = this.make.graphics({ x: 0, y: 0 });
     g.setVisible(false);
 
-    // Arena grass — dark field (enemies stay warm-colored for contrast)
     g.fillStyle(0x2f4a2c, 1);
     g.fillRect(0, 0, 64, 64);
     g.fillStyle(0x3d6b3a, 1);
@@ -40,7 +81,6 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('tile_grass', 64, 64);
     g.clear();
 
-    // Tower — clearer stone + banners, origin-friendly silhouette
     g.fillStyle(0x3e4450, 1);
     g.fillRoundedRect(10, 48, 76, 66, 6);
     g.fillStyle(0x8b919c, 1);
@@ -58,7 +98,6 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('tower', 96, 120);
     g.clear();
 
-    // Archer — warm skin + bright cloak vs green field
     g.fillStyle(0x1b1b1b, 1);
     g.fillCircle(16, 11, 8);
     g.fillStyle(0xf0c9a0, 1);
@@ -74,7 +113,6 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('archer', 40, 40);
     g.clear();
 
-    // Enemies: warm/purple bodies on green grass (not camouflage)
     this.makeEnemy(g, 'enemy_grunt', 0xe8a06e, 0x5d4037, 28, false);
     this.makeEnemy(g, 'enemy_elite_grunt', 0xffb74d, 0xef6c00, 36, true);
     this.makeEnemy(g, 'enemy_raider_captain', 0xe53935, 0xb71c1c, 52, true, true);
@@ -84,7 +122,6 @@ export class BootScene extends Phaser.Scene {
     this.makeEnemy(g, 'enemy_elite_brute', 0xa1887f, 0x3e2723, 42, true);
     this.makeEnemy(g, 'enemy_stone_golem', 0x90a4ae, 0x37474f, 64, true, true);
 
-    // Projectiles — high-contrast yellow
     g.fillStyle(0x1a1a1a, 1);
     g.fillRoundedRect(0, 3, 20, 6, 2);
     g.fillStyle(0xfff176, 1);
@@ -103,7 +140,6 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('arrow_crit', 34, 12);
     g.clear();
 
-    // XP orb
     g.fillStyle(0xf57f17, 1);
     g.fillCircle(8, 8, 8);
     g.fillStyle(0xffeb3b, 1);
@@ -113,7 +149,6 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('xp_orb', 16, 16);
     g.clear();
 
-    // Codex book
     g.fillStyle(0x3e2723, 1);
     g.fillRoundedRect(0, 0, 56, 64, 4);
     g.fillStyle(0xef6c00, 1);
@@ -126,12 +161,20 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('codex_btn', 56, 64);
     g.clear();
 
-    // Hit spark
     g.fillStyle(0xffffff, 1);
     g.fillCircle(8, 8, 4);
     g.fillStyle(0xffecb3, 0.95);
     g.fillCircle(8, 8, 7);
     g.generateTexture('hit_spark', 16, 16);
+    g.clear();
+
+    g.fillStyle(0x6d4c41, 0.9);
+    g.fillCircle(12, 14, 10);
+    g.fillStyle(0xa1887f, 0.85);
+    g.fillCircle(18, 10, 8);
+    g.fillStyle(0xd7ccc8, 0.7);
+    g.fillCircle(8, 8, 5);
+    g.generateTexture('death_puff', 28, 28);
     g.clear();
 
     g.destroy();
@@ -155,7 +198,6 @@ export class BootScene extends Phaser.Scene {
       g.fillCircle(cx, cy, size * 0.48);
     }
 
-    // Drop shadow for separation from grass
     g.fillStyle(0x000000, 0.28);
     g.fillEllipse(cx, cy + bodyR * 0.85, bodyR * 1.5, bodyR * 0.55);
 
@@ -164,7 +206,6 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(cx, cy, bodyR);
     g.strokeCircle(cx, cy, bodyR);
 
-    // Eyes — bright white + pupils
     const eyeY = cy - bodyR * 0.15;
     const eyeX = bodyR * 0.28;
     g.fillStyle(0xffffff, 1);
@@ -174,7 +215,6 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(cx - eyeX, eyeY, Math.max(1.2, size * 0.035));
     g.fillCircle(cx + eyeX, eyeY, Math.max(1.2, size * 0.035));
 
-    // Mouth
     g.lineStyle(2, outline, 1);
     g.beginPath();
     g.moveTo(cx - bodyR * 0.2, cy + bodyR * 0.25);
@@ -183,8 +223,22 @@ export class BootScene extends Phaser.Scene {
 
     if (horns) {
       g.fillStyle(outline, 1);
-      g.fillTriangle(cx - bodyR * 0.55, cy - bodyR * 0.4, cx - bodyR * 0.15, cy - bodyR * 0.9, cx - bodyR * 0.05, cy - bodyR * 0.35);
-      g.fillTriangle(cx + bodyR * 0.55, cy - bodyR * 0.4, cx + bodyR * 0.15, cy - bodyR * 0.9, cx + bodyR * 0.05, cy - bodyR * 0.35);
+      g.fillTriangle(
+        cx - bodyR * 0.55,
+        cy - bodyR * 0.4,
+        cx - bodyR * 0.15,
+        cy - bodyR * 0.9,
+        cx - bodyR * 0.05,
+        cy - bodyR * 0.35,
+      );
+      g.fillTriangle(
+        cx + bodyR * 0.55,
+        cy - bodyR * 0.4,
+        cx + bodyR * 0.15,
+        cy - bodyR * 0.9,
+        cx + bodyR * 0.05,
+        cy - bodyR * 0.35,
+      );
     }
 
     g.generateTexture(key, size, size);

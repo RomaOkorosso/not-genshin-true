@@ -2,7 +2,7 @@ import { EventBus } from '../../core/events/EventBus';
 import { ObjectPool } from '../../core/pooling/ObjectPool';
 import { Rng } from '../../core/rng/Rng';
 import { TimerService } from '../../core/timers/TimerService';
-import { TOWER_BASELINE, xpRequiredForLevel } from '../../game/balance/archer';
+import { ARCHER_ULTIMATE, TOWER_BASELINE, xpRequiredForLevel } from '../../game/balance/archer';
 import type { EnemyId } from '../../game/balance/enemies';
 import type { UpgradeDef, UpgradeId, UpgradePoolId } from '../../game/balance/upgrades';
 import { getLevelDef, type LevelId } from '../../game/content/levels';
@@ -50,6 +50,9 @@ export interface RunSnapshot {
   bossAlive: boolean;
   emergencyUsed: boolean;
   evolutionAvailable: boolean;
+  ultimateReady: boolean;
+  ultimateCooldownRemaining: number;
+  ultimateCooldownMax: number;
 }
 
 export interface RunEvents {
@@ -60,6 +63,9 @@ export interface RunEvents {
   onBossSpawn: { enemyId: EnemyId };
   onBossSummon: { count: number };
   onEvolutionReady: Record<string, never>;
+  onUltimate: Record<string, never>;
+  onEnemyDeath: { x: number; y: number };
+  onCritHit: { x: number; y: number };
 }
 
 const ARENA = {
@@ -98,6 +104,7 @@ export class RunController {
   private targeting: TargetingStrategy = nearestToTower;
   private victoryPending = false;
   private arrowStormTimer = ARROW_STORM_INTERVAL;
+  private ultimateCooldown = 0;
 
   private readonly enemies: EnemyModel[] = [];
   private readonly projectiles: ProjectileModel[] = [];
@@ -147,6 +154,7 @@ export class RunController {
     this.pendingOffer = null;
     this.victoryPending = false;
     this.arrowStormTimer = ARROW_STORM_INTERVAL;
+    this.ultimateCooldown = 0;
     this.timers.setWorldPaused(false);
   }
 
@@ -209,7 +217,36 @@ export class RunController {
       bossAlive: this.enemies.some((e) => e.alive && e.def.boss),
       emergencyUsed: this.emergencyUsed,
       evolutionAvailable: hasOfferableEvolution(this.owned, this.upgradePoolId),
+      ultimateReady: this.phase === 'combat' && this.ultimateCooldown <= 0,
+      ultimateCooldownRemaining: Math.max(0, this.ultimateCooldown),
+      ultimateCooldownMax: ARCHER_ULTIMATE.cooldownMs / 1000,
     };
+  }
+
+  /** Focused arrow barrage. Returns false if on cooldown or not in combat. */
+  tryActivateUltimate(): boolean {
+    if (this.phase !== 'combat' || this.ultimateCooldown > 0) return false;
+
+    const target = this.targeting(ARENA.centerX, ARENA.centerY, this.stats.range * 1.2, this.enemies);
+    const baseAngle = target
+      ? Math.atan2(target.y - ARENA.centerY, target.x - ARENA.centerX)
+      : this.rng.range(0, Math.PI * 2);
+    const n = ARCHER_ULTIMATE.arrowCount;
+    const spread = target ? ARCHER_ULTIMATE.fanSpread : Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const angle = target
+        ? baseAngle - spread / 2 + t * spread
+        : (Math.PI * 2 * i) / n;
+      const damage =
+        this.stats.damage * this.stats.projectileDamageMult * ARCHER_ULTIMATE.damageMult;
+      this.spawnProjectile(angle, damage, false);
+    }
+
+    this.ultimateCooldown = ARCHER_ULTIMATE.cooldownMs / 1000;
+    this.audio.play('ultimate');
+    this.bus.emit<RunEvents['onUltimate']>('ultimate', {});
+    return true;
   }
 
   togglePause(): void {
@@ -253,6 +290,9 @@ export class RunController {
 
     const dt = deltaMs / 1000;
     this.timers.update(deltaMs);
+    if (this.ultimateCooldown > 0) {
+      this.ultimateCooldown = Math.max(0, this.ultimateCooldown - dt);
+    }
     this.spawnFromWaves(deltaMs);
     this.updateFrenzy(dt);
     this.updateArrowStorm(dt);
@@ -604,11 +644,15 @@ export class RunController {
     e.hp -= damage * e.damageTakenMult;
     e.hitFlash = 0.12;
     this.audio.play(crit ? 'crit_hit' : 'hit');
+    if (crit) {
+      this.bus.emit<RunEvents['onCritHit']>('crit_hit', { x: e.x, y: e.y });
+    }
     if (e.hp <= 0) {
       e.alive = false;
       e.state = 'dead';
       this.killCount += 1;
       this.audio.play('enemy_death');
+      this.bus.emit<RunEvents['onEnemyDeath']>('enemy_death', { x: e.x, y: e.y });
       if (e.defId === this.victoryBossId) {
         // Winning kill: credit XP without pausing for a post-victory level-up.
         this.xp += e.def.xp * this.stats.xpGainMult;

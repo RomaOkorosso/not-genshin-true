@@ -38,6 +38,12 @@ export const CODEX_PAGES: CodexPage[] = [
     body: 'Finish a branch (Volley, Ricochet II, or Deadly Precision) to unlock an Evolution — a major mechanical upgrade, not a small stat bump. Available from Level 4+.',
   },
   {
+    id: 'mech_ultimate',
+    section: 'mechanics',
+    title: 'Ultimate',
+    body: 'Tap ULTIMATE for a focused arrow barrage toward the nearest enemy (or a full circle if none). Auto-combat continues; cooldown is about 25 seconds.',
+  },
+  {
     id: 'archer',
     section: 'archer',
     title: 'Archer',

@@ -37,6 +37,15 @@ export const TOWER_BASELINE: {
   emergencyHealRatio: 0.25,
 };
 
+/** Archer Ultimate — one simple combat button (Milestone 2.5). */
+export const ARCHER_ULTIMATE = {
+  cooldownMs: 25_000,
+  arrowCount: 12,
+  damageMult: 1.35,
+  /** Fan width in radians when a target is locked. */
+  fanSpread: (Math.PI * 2) / 3,
+} as const;
+
 export const XP_CURVE = {
   /** XP required to go from level L to L+1: base + (L-1)*growth */
   base: 5,

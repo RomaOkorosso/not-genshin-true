@@ -67,7 +67,8 @@ export type AudioEvent =
   | 'almanac_close'
   | 'victory'
   | 'defeat'
-  | 'evolution';
+  | 'evolution'
+  | 'ultimate';
 
 export interface AudioService {
   play(event: AudioEvent): void;

@@ -92,4 +92,22 @@ describe('RunController', () => {
     expect(run.getPhase()).toBe('victory');
     run.cleanup();
   });
+
+  it('fires Ultimate once then blocks until cooldown', () => {
+    const run = new RunController(silentAudio, 13);
+    run.start(1, 13);
+    expect(run.tryActivateUltimate()).toBe(true);
+    expect(run.snapshot().ultimateReady).toBe(false);
+    expect(run.tryActivateUltimate()).toBe(false);
+    expect(run.getProjectiles().length).toBeGreaterThan(0);
+    run.cleanup();
+  });
+
+  it('blocks Ultimate while paused', () => {
+    const run = new RunController(silentAudio, 14);
+    run.start(1, 14);
+    run.togglePause();
+    expect(run.tryActivateUltimate()).toBe(false);
+    run.cleanup();
+  });
 });

@@ -103,5 +103,7 @@ function toneFor(event: AudioEvent): {
       return { type: 'sine', freq: 523, freqEnd: 784, dur: 0.45, gain: 0.16 };
     case 'defeat':
       return { type: 'sawtooth', freq: 200, freqEnd: 60, dur: 0.4, gain: 0.14 };
+    case 'ultimate':
+      return { type: 'sawtooth', freq: 180, freqEnd: 720, dur: 0.35, gain: 0.18 };
   }
 }

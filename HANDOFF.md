@@ -21,15 +21,15 @@ docs/            design + Phase 1/2 + deployment specs
 assets/          concept sheets + style references (not yet sliced)
 ```
 
-## Milestone 2 gameplay
+## Milestone 2 + 2.5 gameplay
 
-Playable Levels 1–5 with linear unlock. Archer Evolutions from Level 4+. Level 5 ends on Stone Golem (Stone Skin / Final Push / summons).
+Playable Levels 1–5 with linear unlock. Archer Evolutions from Level 4+. Level 5 ends on Stone Golem. Archer Ultimate (HUD) + first runtime sprite extracts.
 
 ## Next recommended work
 
-1. Playtest Levels 2–5 feel / balance (Runner tempo, Golem phases, Evolution timing).
-2. Slice first production sprites from `assets/core/` (see `docs/ASSET_MANIFEST.md`).
-3. Milestone 3+: second class or meta systems only after external tester feedback.
+1. External playtest (Ultimate, Runner tempo, Golem phases).
+2. Refine crops / more enemy extracts (`docs/RUNTIME_SPRITES.md`).
+3. Milestone 3+: second class or meta only after tester feedback.
 
 ## Platform
 

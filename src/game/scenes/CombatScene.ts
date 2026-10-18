@@ -75,6 +75,10 @@ export class CombatScene extends Phaser.Scene {
   private almanacDragLastY: number | null = null;
   private bossFlash?: Phaser.GameObjects.Rectangle;
   private hitSparkIds = new Set<number>();
+  private ultimateBtn!: Phaser.GameObjects.Text;
+  private ultimateCdFill!: Phaser.GameObjects.Rectangle;
+  private activeVfx = 0;
+  private readonly maxVfx = 24;
 
   constructor() {
     super('Combat');
@@ -95,6 +99,10 @@ export class CombatScene extends Phaser.Scene {
       this.platform.audio.play('evolution');
       this.flashEvolution();
     });
+    this.run.bus.on('ultimate', () => this.flashUltimateCast(arena.centerX, arena.centerY));
+    this.run.bus.on('enemy_death', (p: { x: number; y: number }) => this.spawnDeathPuff(p.x, p.y));
+    this.run.bus.on('crit_hit', (p: { x: number; y: number }) => this.spawnCritSpark(p.x, p.y));
+    this.run.bus.on('level_up', () => this.flashLevelUp());
 
     this.drawArena(arena);
     this.createHud(arena);
@@ -133,11 +141,15 @@ export class CombatScene extends Phaser.Scene {
     ring.strokeCircle(arena.centerX, arena.centerY, range - 1);
 
     // Tower art centered on the same point enemies converge to / targeting uses.
-    this.add.image(arena.centerX, arena.centerY + 8, 'tower').setDepth(DEPTH.tower);
-    this.add
+    const tower = this.add.image(arena.centerX, arena.centerY + 8, 'tower').setDepth(DEPTH.tower);
+    const towerScale = Math.min(1, 110 / Math.max(tower.height, 1));
+    tower.setScale(towerScale);
+
+    const archer = this.add
       .image(arena.centerX, arena.centerY - 42, 'archer')
-      .setDepth(DEPTH.archer)
-      .setScale(1.45);
+      .setDepth(DEPTH.archer);
+    const archerScale = Math.min(1.2, 56 / Math.max(archer.height, 1));
+    archer.setScale(archerScale);
   }
 
   private createHud(arena: { width: number }): void {
@@ -220,9 +232,35 @@ export class CombatScene extends Phaser.Scene {
     this.codexBtn = this.add
       .image(56, 130, 'codex_btn')
       .setDepth(hud + 5)
-      .setScale(0.85)
+      .setDisplaySize(52, 58)
       .setInteractive({ useHandCursor: true });
     this.codexBtn.on('pointerup', () => this.toggleAlmanac());
+
+    const ultX = arena.width - 88;
+    const ultY = 1180;
+    this.add
+      .rectangle(ultX, ultY, 120, 56, 0x1b1208, 0.75)
+      .setStrokeStyle(2, 0xffe082)
+      .setDepth(hud + 4);
+    this.ultimateCdFill = this.add
+      .rectangle(ultX - 58, ultY, 0, 52, 0x5d4037, 0.85)
+      .setOrigin(0, 0.5)
+      .setDepth(hud + 5);
+    this.ultimateBtn = this.add
+      .text(ultX, ultY, 'ULTIMATE', {
+        fontFamily: UI_FONT_DISPLAY,
+        fontStyle: '800',
+        fontSize: '16px',
+        color: '#fffde7',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setDepth(hud + 6)
+      .setInteractive({ useHandCursor: true });
+    this.ultimateBtn.on('pointerup', () => {
+      if (this.almanacOpen || this.pauseMenuOpen) return;
+      this.run.tryActivateUltimate();
+    });
   }
 
   private createOverlays(arena: { width: number; height: number }): void {
@@ -479,14 +517,97 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private spawnHitSpark(x: number, y: number): void {
-    const spark = this.add.circle(x, y, 6, 0xfff59d, 0.9).setDepth(DEPTH.projectile + 1);
+    if (!this.tryBeginVfx()) return;
+    const key = this.textures.exists('hit_spark') ? 'hit_spark' : undefined;
+    const spark = key
+      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(22, 22)
+      : this.add.circle(x, y, 6, 0xfff59d, 0.9).setDepth(DEPTH.projectile + 1);
     this.tweens.add({
       targets: spark,
       scale: 2.2,
       alpha: 0,
       duration: 180,
-      onComplete: () => spark.destroy(),
+      onComplete: () => {
+        spark.destroy();
+        this.endVfx();
+      },
     });
+  }
+
+  private spawnCritSpark(x: number, y: number): void {
+    if (!this.tryBeginVfx()) return;
+    const spark = this.add.circle(x, y, 10, 0xffab00, 0.95).setDepth(DEPTH.projectile + 2);
+    this.tweens.add({
+      targets: spark,
+      scale: 2.8,
+      alpha: 0,
+      duration: 240,
+      onComplete: () => {
+        spark.destroy();
+        this.endVfx();
+      },
+    });
+  }
+
+  private spawnDeathPuff(x: number, y: number): void {
+    if (!this.tryBeginVfx()) return;
+    const key = this.textures.exists('death_puff') ? 'death_puff' : undefined;
+    const puff = key
+      ? this.add.image(x, y, key).setDepth(DEPTH.projectile + 1).setDisplaySize(36, 28)
+      : this.add.circle(x, y, 14, 0x8d6e63, 0.85).setDepth(DEPTH.projectile + 1);
+    this.tweens.add({
+      targets: puff,
+      y: y - 18,
+      scale: 1.6,
+      alpha: 0,
+      duration: 320,
+      onComplete: () => {
+        puff.destroy();
+        this.endVfx();
+      },
+    });
+  }
+
+  private flashUltimateCast(cx: number, cy: number): void {
+    if (!this.tryBeginVfx()) return;
+    const ring = this.add.circle(cx, cy, 40, 0xffe082, 0.35).setDepth(DEPTH.projectile + 2);
+    this.tweens.add({
+      targets: ring,
+      scale: 4,
+      alpha: 0,
+      duration: 420,
+      onComplete: () => {
+        ring.destroy();
+        this.endVfx();
+      },
+    });
+  }
+
+  private flashLevelUp(): void {
+    if (!this.tryBeginVfx()) return;
+    const { width, height } = this.scale;
+    const flash = this.add
+      .rectangle(width / 2, height / 2, width, height, 0xfff59d, 0.22)
+      .setDepth(DEPTH.overlay - 1);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 350,
+      onComplete: () => {
+        flash.destroy();
+        this.endVfx();
+      },
+    });
+  }
+
+  private tryBeginVfx(): boolean {
+    if (this.activeVfx >= this.maxVfx) return false;
+    this.activeVfx += 1;
+    return true;
+  }
+
+  private endVfx(): void {
+    this.activeVfx = Math.max(0, this.activeVfx - 1);
   }
 
   private makeButton(x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.Text {
@@ -668,9 +789,19 @@ export class CombatScene extends Phaser.Scene {
     this.timerText.setText(formatTime(snap.elapsedMs));
     this.killText.setText(`Kills ${snap.killCount}`);
     if (this.codexBtn) {
-      const pulse = snap.evolutionAvailable ? 0.85 + Math.sin(this.time.now / 200) * 0.15 : 1;
-      this.codexBtn.setScale(0.85 * pulse);
+      const pulse = snap.evolutionAvailable ? 1 + Math.sin(this.time.now / 200) * 0.08 : 1;
+      this.codexBtn.setScale(pulse);
       this.codexBtn.setTint(snap.evolutionAvailable ? 0xffecb3 : 0xffffff);
+    }
+    if (this.ultimateBtn && this.ultimateCdFill) {
+      const max = snap.ultimateCooldownMax || 1;
+      const rem = snap.ultimateCooldownRemaining;
+      const ready = snap.ultimateReady && !this.almanacOpen && !this.pauseMenuOpen;
+      const fillW = ready ? 116 : Math.max(0, 116 * (1 - rem / max));
+      this.ultimateCdFill.width = fillW;
+      this.ultimateCdFill.setFillStyle(ready ? 0x2e7d32 : 0x5d4037, 0.9);
+      this.ultimateBtn.setAlpha(ready ? 1 : 0.55);
+      this.ultimateBtn.setText(ready ? 'ULTIMATE' : `${Math.ceil(rem)}s`);
     }
   }
 

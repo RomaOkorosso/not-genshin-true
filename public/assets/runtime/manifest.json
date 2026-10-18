@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-10-18T10:33:03.085Z",
+  "sprites": [
+    {
+      "key": "archer",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/archer.png",
+      "w": 105,
+      "h": 149,
+      "note": "Idle frame crop from animation strip"
+    },
+    {
+      "key": "archer_attack",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/archer_attack.png",
+      "w": 65,
+      "h": 64,
+      "note": "Attack pose; optional anim frame"
+    },
+    {
+      "key": "enemy_grunt",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/enemy_grunt.png",
+      "w": 54,
+      "h": 56,
+      "note": "Grunt walk/attack strip frame"
+    },
+    {
+      "key": "enemy_grunt_attack",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/enemy_grunt_attack.png",
+      "w": 55,
+      "h": 51,
+      "note": "Grunt attack frame"
+    },
+    {
+      "key": "tower",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/tower.png",
+      "w": 177,
+      "h": 217,
+      "note": "Central tower crop (may include archer on top)"
+    },
+    {
+      "key": "tile_grass",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/tile_grass.png",
+      "w": 75,
+      "h": 81,
+      "note": "Grass tile variant"
+    },
+    {
+      "key": "codex_btn",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/codex_btn.png",
+      "w": 135,
+      "h": 125,
+      "note": "Codex / Almanac book button"
+    },
+    {
+      "key": "hit_spark",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/hit_spark.png",
+      "w": 130,
+      "h": 113,
+      "note": "Hit spark VFX"
+    },
+    {
+      "key": "death_puff",
+      "path": "/home/roma/Desktop/not-genshin-true/public/assets/runtime/death_puff.png",
+      "w": 180,
+      "h": 120,
+      "note": "Enemy death puff (smoke)"
+    }
+  ]
+}
