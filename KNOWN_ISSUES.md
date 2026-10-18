@@ -9,3 +9,4 @@
 - Default git branch is currently `master`; CI listens to both `main` and `master`.
 - Save key is `not-genshin:save:v2` (legacy v1 migrated on load).
 - Localization is EN/RU only; English data fields on upgrades/enemies remain as balance fallbacks, UI uses `t()` keys.
+- Levels 1–5 are tuned as onboarding safety (fair-bot clear rates ~97–100% / 100 seeds). Later difficulty passes should raise second-half pressure without restoring sub-2-minute collapses.

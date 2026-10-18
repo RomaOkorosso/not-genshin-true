@@ -1,0 +1,112 @@
+NOT GENSHIN — Tests & level clearability report
+Generated: 2026-10-18T11:27:06.399Z
+
+=== 1) Unit tests (vitest) ===
+ ✓ src/systems/combat/RunController.test.ts (10 tests) 14ms
+ ✓ src/systems/combat/MultishotAim.test.ts (4 tests) 12ms
+ ✓ src/platform/browser/BrowserPlatform.test.ts (4 tests) 6ms
+ ✓ src/systems/upgrades/UpgradeOffer.test.ts (3 tests) 6ms
+ ✓ src/game/localization/i18n.test.ts (7 tests) 7ms
+ ✓ src/systems/waves/WaveDirector.test.ts (2 tests) 6ms
+ ✓ src/systems/combat/ProjectileAim.test.ts (3 tests) 12ms
+ ✓ src/game/content/levels.test.ts (3 tests) 6ms
+ ✓ src/core/rng/Rng.test.ts (2 tests) 7ms
+ ✓ src/systems/combat/Targeting.test.ts (2 tests) 4ms
+ ✓ src/game/balance/xp.test.ts (1 test) 4ms
+ Test Files  11 passed (11)
+      Tests  41 passed (41)
+Unit tests: PASS
+
+=== 2) Headless clear sims ===
+Bot: Archer RunController, upgrade pick by DPS score (tower bias when low HP),
+     auto Ultimate; Skip Wait only if tower HP > 55%.
+Seeds: 1, 7, 42, 99, 12345, dt=50ms
+
+=== Fair bot (no damage assist) ===
+Level 1: Level 1 — First Defense
+  [FAIL] seed=1 phase=defeat hp=0 kills=33 heroLv=4 t=1:36/8:00 ups=3 skip=2 ult=4 — tower fell
+  [FAIL] seed=7 phase=defeat hp=0 kills=101 heroLv=8 t=3:28/8:00 ups=7 skip=4 ult=9 — tower fell
+  [FAIL] seed=42 phase=defeat hp=0 kills=34 heroLv=4 t=1:34/8:00 ups=3 skip=2 ult=4 — tower fell
+  [FAIL] seed=99 phase=defeat hp=0 kills=32 heroLv=4 t=1:34/8:00 ups=3 skip=2 ult=4 — tower fell
+  [FAIL] seed=12345 phase=defeat hp=0 kills=42 heroLv=5 t=1:44/8:00 ups=4 skip=2 ult=5 — tower fell
+  Summary: 0/5 seeds cleared
+
+Level 2: Level 2 — Swift Horde
+  [FAIL] seed=1 phase=defeat hp=0 kills=31 heroLv=4 t=1:08/7:30 ups=3 skip=1 ult=3 — tower fell
+  [FAIL] seed=7 phase=defeat hp=0 kills=25 heroLv=4 t=1:01/7:30 ups=3 skip=0 ult=3 — tower fell
+  [FAIL] seed=42 phase=defeat hp=0 kills=31 heroLv=4 t=1:03/7:30 ups=3 skip=1 ult=3 — tower fell
+  [FAIL] seed=99 phase=defeat hp=0 kills=35 heroLv=4 t=1:09/7:30 ups=3 skip=1 ult=3 — tower fell
+  [FAIL] seed=12345 phase=defeat hp=0 kills=27 heroLv=4 t=1:05/7:30 ups=3 skip=1 ult=3 — tower fell
+  Summary: 0/5 seeds cleared
+
+Level 3: Level 3 — Arrow Craft
+  [FAIL] seed=1 phase=defeat hp=0 kills=21 heroLv=3 t=1:00/8:00 ups=2 skip=0 ult=3 — tower fell
+  [FAIL] seed=7 phase=defeat hp=0 kills=34 heroLv=4 t=1:07/8:00 ups=3 skip=1 ult=3 — tower fell
+  [FAIL] seed=42 phase=defeat hp=0 kills=25 heroLv=4 t=1:02/8:00 ups=3 skip=0 ult=3 — tower fell
+  [FAIL] seed=99 phase=defeat hp=0 kills=23 heroLv=3 t=1:01/8:00 ups=2 skip=0 ult=3 — tower fell
+  [FAIL] seed=12345 phase=defeat hp=0 kills=25 heroLv=4 t=1:02/8:00 ups=3 skip=0 ult=3 — tower fell
+  Summary: 0/5 seeds cleared
+
+Level 4: Level 4 — Evolution
+  [FAIL] seed=1 phase=defeat hp=0 kills=10 heroLv=2 t=0:27/8:30 ups=1 skip=0 ult=2 — tower fell
+  [FAIL] seed=7 phase=defeat hp=0 kills=22 heroLv=4 t=1:10/8:30 ups=3 skip=1 ult=3 — tower fell
+  [FAIL] seed=42 phase=defeat hp=0 kills=8 heroLv=2 t=0:31/8:30 ups=1 skip=0 ult=2 — tower fell
+  [FAIL] seed=99 phase=defeat hp=0 kills=11 heroLv=2 t=0:25/8:30 ups=1 skip=0 ult=2 — tower fell
+  [FAIL] seed=12345 phase=defeat hp=0 kills=3 heroLv=1 t=0:24/8:30 ups=0 skip=0 ult=1 — tower fell
+  Summary: 0/5 seeds cleared
+
+Level 5: Level 5 — Stone Heart
+  [FAIL] seed=1 phase=defeat hp=0 kills=23 heroLv=4 t=1:18/9:00 ups=3 skip=0 ult=4 — tower fell
+  [FAIL] seed=7 phase=defeat hp=0 kills=21 heroLv=4 t=1:18/9:00 ups=3 skip=0 ult=4 — tower fell
+  [FAIL] seed=42 phase=defeat hp=0 kills=9 heroLv=2 t=0:26/9:00 ups=1 skip=0 ult=2 — tower fell
+  [FAIL] seed=99 phase=defeat hp=0 kills=8 heroLv=3 t=0:26/9:00 ups=2 skip=0 ult=2 — tower fell
+  [FAIL] seed=12345 phase=defeat hp=0 kills=7 heroLv=2 t=0:26/9:00 ups=1 skip=0 ult=2 — tower fell
+  Summary: 0/5 seeds cleared
+
+=== Sanity bot (+20 flat damage to every alive enemy each tick) ===
+Level 1: Level 1 — First Defense
+  [PASS] seed=1 phase=victory hp=115 kills=293 heroLv=14 t=7:31/8:00 ups=12 skip=45 ult=12 — cleared
+  [PASS] seed=7 phase=victory hp=115 kills=293 heroLv=14 t=7:31/8:00 ups=12 skip=43 ult=12 — cleared
+  Summary: 2/2 seeds cleared
+
+Level 2: Level 2 — Swift Horde
+  [PASS] seed=1 phase=victory hp=100 kills=221 heroLv=12 t=6:20/7:30 ups=11 skip=13 ult=8 — cleared
+  [PASS] seed=7 phase=victory hp=100 kills=222 heroLv=12 t=6:20/7:30 ups=11 skip=13 ult=8 — cleared
+  Summary: 2/2 seeds cleared
+
+Level 3: Level 3 — Arrow Craft
+  [PASS] seed=1 phase=victory hp=100 kills=274 heroLv=13 t=6:46/8:00 ups=12 skip=15 ult=8 — cleared
+  [PASS] seed=7 phase=victory hp=100 kills=274 heroLv=13 t=6:46/8:00 ups=12 skip=16 ult=8 — cleared
+  Summary: 2/2 seeds cleared
+
+Level 4: Level 4 — Evolution
+  [PASS] seed=1 phase=victory hp=100 kills=135 heroLv=12 t=6:01/8:30 ups=11 skip=13 ult=6 — cleared
+  [PASS] seed=7 phase=victory hp=100 kills=127 heroLv=12 t=6:01/8:30 ups=11 skip=14 ult=6 — cleared
+  Summary: 2/2 seeds cleared
+
+Level 5: Level 5 — Stone Heart
+  [PASS] seed=1 phase=victory hp=100 kills=134 heroLv=12 t=6:32/9:00 ups=11 skip=15 ult=8 — cleared
+  [PASS] seed=7 phase=victory hp=100 kills=141 heroLv=12 t=6:32/9:00 ups=11 skip=10 ult=7 — cleared
+  Summary: 2/2 seeds cleared
+
+=== 3) Verdict ===
+Unit tests: PASS (41 expected)
+
+Fair bot clearability:
+  Level 1: 0/5 — NO under this bot policy
+  Level 2: 0/5 — NO under this bot policy
+  Level 3: 0/5 — NO under this bot policy
+  Level 4: 0/5 — NO under this bot policy
+  Level 5: 0/5 — NO under this bot policy
+
+Victory-path sanity (damage assist):
+  Level 1: 2/2 — win condition reachable
+  Level 2: 2/2 — win condition reachable
+  Level 3: 2/2 — win condition reachable
+  Level 4: 2/2 — win condition reachable
+  Level 5: 2/2 — win condition reachable
+
+Conclusion: Fair bot could not clear these seeds, but assisted runs prove victory
+conditions work. Levels are likely hard / bot-suboptimal — manual play may still clear;
+treat fair-bot NO as a balance/skill-floor signal, not a hard lock.
+Wall time: 4.00s

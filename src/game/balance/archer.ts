@@ -12,14 +12,14 @@ export interface ArcherBaseline {
 }
 
 export const ARCHER_BASELINE: ArcherBaseline = {
-  damage: 10,
-  attacksPerSecond: 1.0,
-  critChance: 0.05,
-  critMultiplier: 1.5,
+  damage: 12,
+  attacksPerSecond: 1.15,
+  critChance: 0.06,
+  critMultiplier: 1.55,
   projectileCount: 1,
-  projectileSpeed: 420,
-  range: 320,
-  spreadDegrees: 18,
+  projectileSpeed: 440,
+  range: 360,
+  spreadDegrees: 16,
   pierceCount: 0,
   pierceDamageFalloff: 0.15,
 };
@@ -31,10 +31,10 @@ export const TOWER_BASELINE: {
   emergencyHpRatio: number;
   emergencyHealRatio: number;
 } = {
-  maxHp: 100,
+  maxHp: 120,
   radius: 36,
-  emergencyHpRatio: 0.2,
-  emergencyHealRatio: 0.25,
+  emergencyHpRatio: 0.25,
+  emergencyHealRatio: 0.35,
 };
 
 /** Archer Ultimate — one simple combat button (Milestone 2.5). */
@@ -47,11 +47,11 @@ export const ARCHER_ULTIMATE = {
 } as const;
 
 export const XP_CURVE = {
-  /** XP required to go from level L to L+1: base + (L-1)*growth */
-  base: 5,
-  growth: 3,
+  /** XP required to go from level L to L+1: base + (L-1)*growth — slightly faster early levels. */
+  base: 4,
+  growth: 2.5,
 } as const;
 
 export function xpRequiredForLevel(level: number): number {
-  return XP_CURVE.base + Math.max(0, level - 1) * XP_CURVE.growth;
+  return Math.round(XP_CURVE.base + Math.max(0, level - 1) * XP_CURVE.growth);
 }

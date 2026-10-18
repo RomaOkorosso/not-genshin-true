@@ -22,17 +22,18 @@ describe('RunController', () => {
     ]);
     run.chooseUpgrade('quick_draw');
     expect(run.getPhase()).toBe('combat');
-    expect(run.getStats().attacksPerSecond).toBeCloseTo(1.15, 5);
+    // Baseline APS 1.15 × Quick Draw 1.15
+    expect(run.getStats().attacksPerSecond).toBeCloseTo(1.15 * 1.15, 5);
     run.cleanup();
   });
 
-  it('triggers Level-1 emergency heal once below 20% HP', () => {
+  it('triggers Level-1 emergency heal once below emergency HP ratio', () => {
     const run = new RunController(silentAudio, 1);
     run.start(1);
-    run.debugDamageTower(85);
+    run.debugDamageTower(100); // 120 → 20 (< 25% of 120)
     const snap = run.snapshot();
     expect(snap.emergencyUsed).toBe(true);
-    expect(snap.towerHp).toBeGreaterThan(15);
+    expect(snap.towerHp).toBeGreaterThan(20);
     expect(snap.phase).not.toBe('defeat');
     run.cleanup();
   });
@@ -51,8 +52,8 @@ describe('RunController', () => {
   it('defeats when tower HP reaches zero after emergency', () => {
     const run = new RunController(silentAudio, 2);
     run.start(1, 2);
-    run.debugDamageTower(85);
-    run.debugDamageTower(200);
+    run.debugDamageTower(100);
+    run.debugDamageTower(300);
     expect(run.getPhase()).toBe('defeat');
     run.cleanup();
   });
@@ -60,9 +61,9 @@ describe('RunController', () => {
   it('does not emergency-heal on level 2', () => {
     const run = new RunController(silentAudio, 3);
     run.start(2, 3);
-    run.debugDamageTower(85);
+    run.debugDamageTower(100);
     expect(run.snapshot().emergencyUsed).toBe(false);
-    expect(run.snapshot().towerHp).toBe(15);
+    expect(run.snapshot().towerHp).toBe(20);
     run.cleanup();
   });
 

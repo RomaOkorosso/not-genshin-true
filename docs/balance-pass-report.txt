@@ -1,0 +1,591 @@
+NOT GENSHIN — Balance harness report
+Generated: 2026-10-18T11:37:20.185Z
+Fair bot: DPS-biased upgrade picks, auto Ultimate, no damage assist.
+Primary clear-rate target uses WITHOUT Skip Wait; WITH Skip is a control.
+
+=== ROOT CAUSE (pre-retune findings) ===
+Telemetry showed collapse is driven by early spawn density, not Skip Wait:
+- Levels 2–5 spawned 10–14 enemies in the first 15s while hero DPS was ~3–5.
+- By 0:45–1:15, dense segments put 20–32 alive on field; tower incoming DPS 8–20.
+- Defeat often at 0:25–1:20 with only 0–3 upgrades — before a build exists.
+- Skip Wait was secondary: NO-SKIP failed similarly; Skip could worsen wave stacking
+  when clearing a soft intro then jumping into a hard segment underleveled.
+Retune: softer first 90s budgets/intervals, delay runners/brutes, slower approaches,
+lower tower chip damage, stronger early Archer baseline, higher tower HP + L1 heal.
+
+=== CONTROL: Skip Wait OFF vs ON (same seeds) ===
+Seeds: 1, 7, 42, 99, 12345
+
+--- Level 1: Level 1 — First Defense ---
+  seed=1  NO-SKIP: PASS t=7:55 hp=120 lv=11 ups=10
+           SKIP:    PASS t=8:00 hp=84 lv=11 ups=10 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=54 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=3 spawned=4 killed=2 enemyHP=54 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=4 spawned=5 killed=4 enemyHP=72 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=54 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=7  NO-SKIP: PASS t=7:55 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:55 hp=108 lv=11 ups=10 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=3 spawned=4 killed=2 enemyHP=54 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=4 spawned=5 killed=4 enemyHP=72 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=42  NO-SKIP: PASS t=7:55 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:55 hp=120 lv=11 ups=10 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=4 spawned=4 killed=1 enemyHP=59 towerDpsIn=0 heroDps=2.1 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=4 spawned=5 killed=5 enemyHP=72 towerDpsIn=0 heroDps=5.1 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=99  NO-SKIP: PASS t=7:57 hp=108 lv=11 ups=10
+           SKIP:    PASS t=8:00 hp=96 lv=11 ups=10 skips=9
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=4 spawned=4 killed=1 enemyHP=59 towerDpsIn=0 heroDps=2.1 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=4 spawned=5 killed=5 enemyHP=72 towerDpsIn=0 heroDps=5.1 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=12345  NO-SKIP: PASS t=7:55 hp=114 lv=11 ups=10
+           SKIP:    PASS t=7:55 hp=108 lv=11 ups=10 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=54 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=2 spawned=4 killed=3 enemyHP=36 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=4 spawned=5 killed=3 enemyHP=72 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=54 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=1 spawned=2 killed=4 enemyHP=18 towerDpsIn=0 heroDps=4.8 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=1 enemyHP=0 towerDpsIn=0 heroDps=1.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+--- Level 2: Level 2 — Swift Horde ---
+  seed=1  NO-SKIP: PASS t=7:07 hp=120 lv=10 ups=9
+           SKIP:    PASS t=7:07 hp=120 lv=10 ups=9 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=4.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=7 spawned=9 killed=4 enemyHP=105 towerDpsIn=0 heroDps=4.33 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=5 spawned=7 killed=9 enemyHP=83 towerDpsIn=0 heroDps=8.67 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=4.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=7  NO-SKIP: PASS t=7:05 hp=120 lv=10 ups=9
+           SKIP:    PASS t=7:09 hp=120 lv=10 ups=9 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=54 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=4 spawned=8 killed=5 enemyHP=72 towerDpsIn=0 heroDps=5.07 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=5 spawned=8 killed=7 enemyHP=83 towerDpsIn=0 heroDps=7.93 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,sharpened_arrows_iii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=54 towerDpsIn=0 heroDps=4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=42  NO-SKIP: PASS t=7:07 hp=120 lv=10 ups=9
+           SKIP:    PASS t=7:08 hp=120 lv=10 ups=9 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=4.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=7 spawned=8 killed=2 enemyHP=112 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=6 spawned=8 killed=9 enemyHP=93 towerDpsIn=0 heroDps=10.4 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=4.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=99  NO-SKIP: PASS t=7:07 hp=120 lv=10 ups=9
+           SKIP:    PASS t=7:07 hp=120 lv=10 ups=9 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=54 towerDpsIn=0 heroDps=3.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=36 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=6 spawned=8 killed=4 enemyHP=101 towerDpsIn=0 heroDps=4.33 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    1:45-2:00 alive=4 spawned=8 killed=10 enemyHP=58 towerDpsIn=0 heroDps=10.13 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,quick_draw,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=54 towerDpsIn=0 heroDps=3.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=12345  NO-SKIP: PASS t=7:07 hp=120 lv=10 ups=9
+           SKIP:    PASS t=7:08 hp=120 lv=10 ups=9 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=3.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=11 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=7 spawned=8 killed=2 enemyHP=119 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:45-2:00 alive=6 spawned=8 killed=9 enemyHP=87 towerDpsIn=0 heroDps=9.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=4 killed=1 enemyHP=42 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=4 enemyHP=41 towerDpsIn=0 heroDps=3.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+--- Level 3: Level 3 — Arrow Craft ---
+  seed=1  NO-SKIP: PASS t=7:40 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:41 hp=120 lv=11 ups=10 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=22 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=6 spawned=10 killed=6 enemyHP=94 towerDpsIn=0 heroDps=5.33 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    1:45-2:00 alive=7 spawned=8 killed=7 enemyHP=112 towerDpsIn=0 heroDps=7.47 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,quick_draw,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=7  NO-SKIP: PASS t=7:42 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:43 hp=120 lv=11 ups=10 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=41 towerDpsIn=0 heroDps=6.1 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=36 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=8 spawned=11 killed=5 enemyHP=130 towerDpsIn=0 heroDps=4.6 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=6 spawned=7 killed=9 enemyHP=108 towerDpsIn=0 heroDps=9.13 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=41 towerDpsIn=0 heroDps=6.1 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=2.7 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=42  NO-SKIP: PASS t=7:42 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:42 hp=120 lv=11 ups=10 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=6 enemyHP=36 towerDpsIn=0 heroDps=6.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=9 spawned=11 killed=3 enemyHP=162 towerDpsIn=0 heroDps=3.13 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=8 spawned=8 killed=9 enemyHP=144 towerDpsIn=0 heroDps=10.8 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=6 enemyHP=36 towerDpsIn=0 heroDps=6.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=99  NO-SKIP: PASS t=7:44 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:44 hp=111 lv=11 ups=10 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=11 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=8 killed=4 enemyHP=72 towerDpsIn=0 heroDps=4.63 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,piercing_i]
+    1:45-2:00 alive=6 spawned=9 killed=8 enemyHP=94 towerDpsIn=0 heroDps=6.71 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,piercing_i,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=36 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=12345  NO-SKIP: PASS t=7:43 hp=120 lv=11 ups=10
+           SKIP:    PASS t=7:41 hp=120 lv=11 ups=10 skips=5
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=11 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=9 spawned=10 killed=2 enemyHP=155 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    1:45-2:00 alive=8 spawned=9 killed=10 enemyHP=130 towerDpsIn=0 heroDps=11.34 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,quick_draw,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=11 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+--- Level 4: Level 4 — Evolution ---
+  seed=1  NO-SKIP: PASS t=6:52 hp=120 lv=10 ups=9
+           SKIP:    PASS t=6:54 hp=70 lv=10 ups=9 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=29 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=7 killed=4 enemyHP=69 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=1 spawned=5 killed=9 enemyHP=18 towerDpsIn=0 heroDps=8.47 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,multishot_i]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=29 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=7  NO-SKIP: PASS t=6:55 hp=120 lv=10 ups=9
+           SKIP:    PASS t=6:55 hp=108 lv=10 ups=9 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=53 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=9 killed=6 enemyHP=76 towerDpsIn=0 heroDps=4.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,multishot_i]
+    1:45-2:00 alive=1 spawned=3 killed=7 enemyHP=4 towerDpsIn=0 heroDps=7.9 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,multishot_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=53 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=22 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=42  NO-SKIP: PASS t=6:55 hp=120 lv=10 ups=9
+           SKIP:    PASS t=6:53 hp=120 lv=10 ups=9 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=54 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=36 towerDpsIn=0 heroDps=5.53 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=4 spawned=8 killed=5 enemyHP=58 towerDpsIn=0 heroDps=4.6 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,multishot_i]
+    1:45-2:00 alive=2 spawned=5 killed=7 enemyHP=15 towerDpsIn=0 heroDps=7.44 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,multishot_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=54 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=36 towerDpsIn=0 heroDps=5.53 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=99  NO-SKIP: PASS t=6:56 hp=100 lv=10 ups=9
+           SKIP:    PASS t=6:54 hp=120 lv=10 ups=9 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=47 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.13 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=36 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=6 spawned=8 killed=4 enemyHP=101 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    1:45-2:00 alive=0 spawned=4 killed=10 enemyHP=0 towerDpsIn=0 heroDps=10.13 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,quick_draw,quick_draw_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=47 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.13 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=12345  NO-SKIP: PASS t=6:56 hp=108 lv=10 ups=9
+           SKIP:    PASS t=6:54 hp=120 lv=10 ups=9 skips=6
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.47 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=4 spawned=4 killed=3 enemyHP=59 towerDpsIn=0 heroDps=3.56 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=4 enemyHP=0 towerDpsIn=0 heroDps=3.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=8 killed=4 enemyHP=69 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=2 spawned=5 killed=8 enemyHP=21 towerDpsIn=0 heroDps=7.8 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,quick_draw]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.47 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=4 spawned=4 killed=3 enemyHP=59 towerDpsIn=0 heroDps=3.56 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=4 enemyHP=0 towerDpsIn=0 heroDps=3.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+--- Level 5: Level 5 — Stone Heart ---
+  seed=1  NO-SKIP: PASS t=7:54 hp=90 lv=10 ups=9
+           SKIP:    PASS t=7:51 hp=90 lv=10 ups=9 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=29 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=7 spawned=9 killed=4 enemyHP=105 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=1 spawned=3 killed=9 enemyHP=18 towerDpsIn=0 heroDps=8.47 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,multishot_i]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=29 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=7  NO-SKIP: PASS t=7:56 hp=80 lv=10 ups=9
+           SKIP:    PASS t=7:51 hp=100 lv=10 ups=9 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=53 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=7 spawned=11 killed=6 enemyHP=105 towerDpsIn=0 heroDps=4.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,multishot_i]
+    1:45-2:00 alive=0 spawned=1 killed=8 enemyHP=0 towerDpsIn=0 heroDps=8.2 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,multishot_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=53 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=54 towerDpsIn=0 heroDps=4.27 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.6 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=22 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=42  NO-SKIP: PASS t=7:54 hp=80 lv=10 ups=9
+           SKIP:    PASS t=7:54 hp=80 lv=10 ups=9 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=54 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=36 towerDpsIn=0 heroDps=5.53 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=9 killed=5 enemyHP=83 towerDpsIn=0 heroDps=4.6 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,multishot_i]
+    1:45-2:00 alive=2 spawned=4 killed=7 enemyHP=29 towerDpsIn=0 heroDps=7.93 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,multishot_i,sharpened_arrows_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=54 towerDpsIn=0 heroDps=1.93 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=2 spawned=4 killed=5 enemyHP=36 towerDpsIn=0 heroDps=5.53 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=2 enemyHP=0 towerDpsIn=0 heroDps=2.4 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=99  NO-SKIP: PASS t=7:55 hp=80 lv=10 ups=9
+           SKIP:    PASS t=7:59 hp=70 lv=10 ups=9 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=47 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.13 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=36 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=9 spawned=11 killed=4 enemyHP=141 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,quick_draw]
+    1:45-2:00 alive=0 spawned=1 killed=10 enemyHP=0 towerDpsIn=0 heroDps=10.13 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,quick_draw,quick_draw_ii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=4 spawned=5 killed=1 enemyHP=60 towerDpsIn=0 heroDps=2 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=3 spawned=4 killed=5 enemyHP=47 towerDpsIn=0 heroDps=5.2 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=3 enemyHP=0 towerDpsIn=0 heroDps=3.13 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+  seed=12345  NO-SKIP: PASS t=7:54 hp=90 lv=10 ups=9
+           SKIP:    PASS t=7:52 hp=90 lv=10 ups=9 skips=7
+    [NO-SKIP 15s buckets until end or 2:00]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.47 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=4 spawned=4 killed=3 enemyHP=59 towerDpsIn=0 heroDps=3.56 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=4 enemyHP=0 towerDpsIn=0 heroDps=3.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=1 spawned=1 killed=0 enemyHP=18 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:30-1:45 alive=5 spawned=8 killed=4 enemyHP=69 towerDpsIn=0 heroDps=3.87 towerHP=120 heroLv=3 ups=[sharpened_arrows_i,sharpened_arrows_ii]
+    1:45-2:00 alive=2 spawned=5 killed=8 enemyHP=29 towerDpsIn=0 heroDps=7.27 towerHP=120 heroLv=4 ups=[sharpened_arrows_i,sharpened_arrows_ii,sharpened_arrows_iii]
+    [SKIP 15s buckets — first 90s]
+    0:00-0:15 alive=3 spawned=5 killed=2 enemyHP=40 towerDpsIn=0 heroDps=1.47 towerHP=120 heroLv=1 ups=[-]
+    0:15-0:30 alive=4 spawned=4 killed=3 enemyHP=59 towerDpsIn=0 heroDps=3.56 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:30-0:45 alive=0 spawned=0 killed=4 enemyHP=0 towerDpsIn=0 heroDps=3.9 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    0:45-1:00 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:00-1:15 alive=0 spawned=0 killed=0 enemyHP=0 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+    1:15-1:30 alive=2 spawned=2 killed=0 enemyHP=29 towerDpsIn=0 heroDps=0 towerHP=120 heroLv=2 ups=[sharpened_arrows_i]
+
+=== VALIDATE 100 seeds (WITHOUT Skip Wait) ===
+
+Level 1: Level 1 — First Defense
+  clear rate: 100.0% (100/100)
+  win tower HP: median=120  p10=108  p50=120  p90=120
+  median hero level (wins): 11
+  median boss kill time (wins): 7:55
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), multishot_i(100), sharpened_arrows_iii(100), quick_draw(100), quick_draw_ii(100), multishot_ii(100), critical_eye(100)
+
+Level 2: Level 2 — Swift Horde
+  clear rate: 100.0% (100/100)
+  win tower HP: median=120  p10=120  p50=120  p90=120
+  median hero level (wins): 10
+  median boss kill time (wins): 7:06
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), quick_draw(100), sharpened_arrows_iii(100), multishot_i(100), quick_draw_ii(100), critical_eye(92), multishot_ii(75)
+
+Level 3: Level 3 — Arrow Craft
+  clear rate: 100.0% (100/100)
+  win tower HP: median=120  p10=113  p50=120  p90=120
+  median hero level (wins): 11
+  median boss kill time (wins): 7:42
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), quick_draw(100), sharpened_arrows_ii(100), sharpened_arrows_iii(100), quick_draw_ii(100), multishot_i(99), critical_eye(95), multishot_ii(92)
+
+Level 4: Level 4 — Evolution
+  clear rate: 97.0% (97/100)
+  win tower HP: median=114  p10=86  p50=114  p90=120
+  median hero level (wins): 10
+  median boss kill time (wins): 6:55
+  median defeat time (losses): 7:02  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), sharpened_arrows_iii(100), quick_draw(100), quick_draw_ii(98), multishot_i(95), critical_eye(84), deadly_precision(63)
+
+Level 5: Level 5 — Stone Heart
+  clear rate: 98.0% (98/100)
+  win tower HP: median=80  p10=54  p50=80  p90=90
+  median hero level (wins): 10
+  median boss kill time (wins): 7:54
+  median defeat time (losses): 8:13  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), quick_draw(100), sharpened_arrows_iii(99), quick_draw_ii(97), multishot_i(93), critical_eye(93), deadly_precision(70)
+
+=== VALIDATE 100 seeds (WITH Skip Wait) ===
+
+Level 1: Level 1 — First Defense
+  clear rate: 100.0% (100/100)
+  win tower HP: median=108  p10=93  p50=108  p90=120
+  median hero level (wins): 11
+  median boss kill time (wins): 7:57
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), multishot_i(100), sharpened_arrows_iii(100), multishot_ii(100), tight_spread(100), quick_draw(100), quick_draw_ii(100)
+
+Level 2: Level 2 — Swift Horde
+  clear rate: 100.0% (100/100)
+  win tower HP: median=120  p10=120  p50=120  p90=120
+  median hero level (wins): 10
+  median boss kill time (wins): 7:07
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), quick_draw(100), sharpened_arrows_iii(100), quick_draw_ii(100), multishot_i(99), critical_eye(91), multishot_ii(80)
+
+Level 3: Level 3 — Arrow Craft
+  clear rate: 100.0% (100/100)
+  win tower HP: median=120  p10=111  p50=120  p90=120
+  median hero level (wins): 11
+  median boss kill time (wins): 7:42
+  median defeat time (losses): n/a  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), sharpened_arrows_iii(100), quick_draw(100), quick_draw_ii(100), multishot_i(99), critical_eye(95), multishot_ii(94)
+
+Level 4: Level 4 — Evolution
+  clear rate: 97.0% (97/100)
+  win tower HP: median=120  p10=85  p50=120  p90=120
+  median hero level (wins): 10
+  median boss kill time (wins): 6:54
+  median defeat time (losses): 7:00  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), sharpened_arrows_iii(100), quick_draw(100), quick_draw_ii(98), multishot_i(91), critical_eye(88), deadly_precision(58)
+
+Level 5: Level 5 — Stone Heart
+  clear rate: 99.0% (99/100)
+  win tower HP: median=84  p10=68  p50=84  p90=100
+  median hero level (wins): 10
+  median boss kill time (wins): 7:54
+  median defeat time (losses): 7:41  early(<2m): 0
+  top upgrades: sharpened_arrows_i(100), sharpened_arrows_ii(100), quick_draw(100), sharpened_arrows_iii(95), quick_draw_ii(94), multishot_i(93), critical_eye(83), deadly_precision(60)
+
+Wall time: 15.84s
+
+=== VERDICT vs onboarding targets (no-skip primary) ===
+Target clear rates: L1 95–100, L2 90–100, L3 85–95, L4 80–95, L5 75–90
+Actual (100 seeds, no Skip): L1 100%, L2 100%, L3 100%, L4 97%, L5 98%
+Early defeats (<2 min): 0 across all levels / both skip modes.
+L1–3 win HP often near max (onboarding floor intentionally soft).
+L5 win HP median ~80 (within readable boss fight band).
+No Evolution required to clear L4/L5 under fair-bot policy.

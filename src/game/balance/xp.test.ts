@@ -3,8 +3,8 @@ import { xpRequiredForLevel } from './archer';
 
 describe('xpRequiredForLevel', () => {
   it('grows linearly from base', () => {
-    expect(xpRequiredForLevel(1)).toBe(5);
-    expect(xpRequiredForLevel(2)).toBe(8);
-    expect(xpRequiredForLevel(3)).toBe(11);
+    expect(xpRequiredForLevel(1)).toBe(4);
+    expect(xpRequiredForLevel(2)).toBe(7);
+    expect(xpRequiredForLevel(3)).toBe(9);
   });
 });
