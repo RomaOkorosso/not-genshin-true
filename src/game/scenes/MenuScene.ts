@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { PlatformBundle } from '../../platform/types';
+import { UI_FONT, UI_FONT_TITLE } from '../../ui/fonts';
 
 export class MenuScene extends Phaser.Scene {
   private platform!: PlatformBundle;
@@ -24,7 +25,8 @@ export class MenuScene extends Phaser.Scene {
 
     this.add
       .text(width / 2, height * 0.22, 'NOT GENSHIN', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: UI_FONT_TITLE,
+        fontStyle: '800',
         fontSize: '48px',
         color: '#e8f5e9',
         stroke: '#1b5e20',
@@ -34,7 +36,8 @@ export class MenuScene extends Phaser.Scene {
 
     this.add
       .text(width / 2, height * 0.3, 'Level 1 — Tower Defense Prototype', {
-        fontFamily: 'Trebuchet MS, sans-serif',
+        fontFamily: UI_FONT,
+        fontStyle: '700',
         fontSize: '18px',
         color: '#a5d6a7',
       })
@@ -45,7 +48,8 @@ export class MenuScene extends Phaser.Scene {
 
     const play = this.add
       .text(width / 2, height * 0.68, 'PLAY LEVEL 1', {
-        fontFamily: 'Trebuchet MS, sans-serif',
+        fontFamily: UI_FONT,
+        fontStyle: '700',
         fontSize: '28px',
         color: '#1b1b1b',
         backgroundColor: '#81c784',
@@ -68,7 +72,8 @@ export class MenuScene extends Phaser.Scene {
         height * 0.82,
         'Archer auto-attacks · 360° spawns · pick upgrades\nTouch & mouse supported',
         {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+        fontStyle: '700',
           fontSize: '14px',
           color: '#c8e6c9',
           align: 'center',
@@ -79,7 +84,8 @@ export class MenuScene extends Phaser.Scene {
     void this.platform.saves.load().then((save) => {
       this.add
         .text(width / 2, height * 0.92, `Runs completed: ${save.runsCompleted}`, {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+        fontStyle: '700',
           fontSize: '13px',
           color: '#81c784',
         })

@@ -1,7 +1,22 @@
 import Phaser from 'phaser';
-import type { UpgradeDef, UpgradeId } from '../balance/upgrades';
 import type { PlatformBundle, SavePayload } from '../../platform/types';
+import { UI_FONT, UI_FONT_TITLE } from '../../ui/fonts';
+import { ARCHER_BASELINE } from '../balance/archer';
+import type { UpgradeDef, UpgradeId } from '../balance/upgrades';
 import { RunController } from '../../systems/combat/RunController';
+
+/** Keep world sprites below HUD/overlays even with y-sorting. */
+const DEPTH = {
+  ground: 0,
+  rangeRing: 1,
+  tower: 5,
+  archer: 6,
+  enemyBase: 10,
+  enemySpan: 9,
+  projectile: 22,
+  hud: 100,
+  overlay: 300,
+} as const;
 
 interface EnemyView {
   root: Phaser.GameObjects.Container;
@@ -77,98 +92,113 @@ export class CombatScene extends Phaser.Scene {
   private drawArena(arena: { width: number; height: number; centerX: number; centerY: number }): void {
     for (let y = 0; y < arena.height; y += 64) {
       for (let x = 0; x < arena.width; x += 64) {
-        this.add.image(x + 32, y + 32, 'tile_grass');
+        this.add.image(x + 32, y + 32, 'tile_grass').setDepth(DEPTH.ground);
       }
     }
 
-    // Soft vignette ring suggestion
-    const ring = this.add.graphics();
-    ring.lineStyle(3, 0x2e4a2e, 0.5);
-    ring.strokeCircle(arena.centerX, arena.centerY, 280);
+    // Attack range must match combat targeting center + stats.range (was hardcoded 280).
+    const range = this.run.getStats().range || ARCHER_BASELINE.range;
+    const ring = this.add.graphics().setDepth(DEPTH.rangeRing);
+    ring.lineStyle(2, 0xfff59d, 0.55);
+    ring.strokeCircle(arena.centerX, arena.centerY, range);
+    ring.lineStyle(1, 0xffffff, 0.25);
+    ring.strokeCircle(arena.centerX, arena.centerY, range - 1);
 
-    this.add.image(arena.centerX, arena.centerY + 18, 'tower').setDepth(5);
-    this.add.image(arena.centerX, arena.centerY - 48, 'archer').setDepth(6).setScale(1.35);
+    // Tower art centered on the same point enemies converge to / targeting uses.
+    this.add.image(arena.centerX, arena.centerY + 8, 'tower').setDepth(DEPTH.tower);
+    this.add
+      .image(arena.centerX, arena.centerY - 42, 'archer')
+      .setDepth(DEPTH.archer)
+      .setScale(1.45);
   }
 
   private createHud(arena: { width: number }): void {
-    const top = 24;
-    this.add.rectangle(arena.width / 2, 52, arena.width - 24, 88, 0x0d1610, 0.72).setDepth(20);
+    const top = 18;
+    const hud = DEPTH.hud;
+    this.add.rectangle(arena.width / 2, 56, arena.width - 24, 96, 0x0d1610, 0.82).setDepth(hud);
 
-    this.add
-      .rectangle(40, top + 18, 200, 14, 0x333333)
-      .setOrigin(0, 0.5)
-      .setDepth(21);
-    this.towerHpBar = this.add
-      .rectangle(40, top + 18, 200, 14, 0xe53935)
-      .setOrigin(0, 0.5)
-      .setDepth(22);
+    // Label above the tower HP bar
     this.towerHpText = this.add
-      .text(40, top + 36, 'Tower HP', {
-        fontFamily: 'Trebuchet MS, sans-serif',
-        fontSize: '14px',
+      .text(40, top, 'Tower 100 / 100', {
+        fontFamily: UI_FONT,
+        fontSize: '15px',
+        fontStyle: '700',
         color: '#ffcdd2',
       })
-      .setDepth(22);
+      .setDepth(hud + 2);
 
     this.add
-      .rectangle(40, top + 58, 200, 10, 0x333333)
+      .rectangle(40, top + 26, 200, 14, 0x333333)
       .setOrigin(0, 0.5)
-      .setDepth(21);
+      .setDepth(hud + 1);
+    this.towerHpBar = this.add
+      .rectangle(40, top + 26, 200, 14, 0xe53935)
+      .setOrigin(0, 0.5)
+      .setDepth(hud + 2);
+
+    this.add
+      .rectangle(40, top + 48, 200, 10, 0x333333)
+      .setOrigin(0, 0.5)
+      .setDepth(hud + 1);
     this.xpBar = this.add
-      .rectangle(40, top + 58, 0, 10, 0xffeb3b)
+      .rectangle(40, top + 48, 0, 10, 0xffeb3b)
       .setOrigin(0, 0.5)
-      .setDepth(22);
+      .setDepth(hud + 2);
 
     this.levelText = this.add
-      .text(arena.width - 40, top + 12, 'Lv 1', {
-        fontFamily: 'Trebuchet MS, sans-serif',
+      .text(arena.width - 40, top, 'Lv 1', {
+        fontFamily: UI_FONT,
         fontSize: '20px',
+        fontStyle: '800',
         color: '#e8f5e9',
       })
       .setOrigin(1, 0)
-      .setDepth(22);
+      .setDepth(hud + 2);
 
     this.timerText = this.add
-      .text(arena.width - 40, top + 40, '0:00', {
-        fontFamily: 'Trebuchet MS, sans-serif',
+      .text(arena.width - 40, top + 28, '0:00', {
+        fontFamily: UI_FONT,
         fontSize: '16px',
+        fontStyle: '700',
         color: '#a5d6a7',
       })
       .setOrigin(1, 0)
-      .setDepth(22);
+      .setDepth(hud + 2);
 
     this.killText = this.add
-      .text(arena.width / 2, top + 18, 'Kills 0', {
-        fontFamily: 'Trebuchet MS, sans-serif',
-        fontSize: '14px',
+      .text(arena.width / 2, top + 8, 'Kills 0', {
+        fontFamily: UI_FONT,
+        fontSize: '15px',
+        fontStyle: '700',
         color: '#c8e6c9',
       })
       .setOrigin(0.5)
-      .setDepth(22);
+      .setDepth(hud + 2);
 
     const pauseBtn = this.add
-      .text(arena.width - 40, 110, 'PAUSE', {
-        fontFamily: 'Trebuchet MS, sans-serif',
+      .text(arena.width - 40, 118, 'PAUSE', {
+        fontFamily: UI_FONT,
         fontSize: '16px',
+        fontStyle: '800',
         color: '#1b1b1b',
         backgroundColor: '#ffe082',
         padding: { x: 10, y: 6 },
       })
       .setOrigin(1, 0)
-      .setDepth(25)
+      .setDepth(hud + 5)
       .setInteractive({ useHandCursor: true });
     pauseBtn.on('pointerup', () => this.onPausePressed());
 
     const codex = this.add
       .image(56, 130, 'codex_btn')
-      .setDepth(25)
+      .setDepth(hud + 5)
       .setScale(0.85)
       .setInteractive({ useHandCursor: true });
     codex.on('pointerup', () => this.toggleAlmanac());
   }
 
   private createOverlays(arena: { width: number; height: number }): void {
-    this.overlayRoot = this.add.container(0, 0).setDepth(40);
+    this.overlayRoot = this.add.container(0, 0).setDepth(DEPTH.overlay);
     this.levelUpPanel = this.add.container(0, 0).setVisible(false);
     this.pausePanel = this.add.container(0, 0).setVisible(false);
     this.endPanel = this.add.container(0, 0).setVisible(false);
@@ -179,7 +209,8 @@ export class CombatScene extends Phaser.Scene {
     const pBg = this.add.rectangle(arena.width / 2, arena.height / 2, arena.width, arena.height, 0x000000, 0.55);
     const pTitle = this.add
       .text(arena.width / 2, arena.height * 0.35, 'PAUSED', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: UI_FONT_TITLE,
+        fontStyle: '800',
         fontSize: '42px',
         color: '#fffde7',
       })
@@ -197,7 +228,8 @@ export class CombatScene extends Phaser.Scene {
     const aBg = this.add.rectangle(arena.width / 2, arena.height / 2, arena.width * 0.86, arena.height * 0.7, 0x3e2723, 0.96);
     const aTitle = this.add
       .text(arena.width / 2, arena.height * 0.22, 'ALMANAC', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: UI_FONT_TITLE,
+        fontStyle: '800',
         fontSize: '36px',
         color: '#ffe082',
       })
@@ -219,7 +251,8 @@ export class CombatScene extends Phaser.Scene {
           'Level 1 has no Evolutions.',
         ].join('\n'),
         {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+          fontStyle: '700',
           fontSize: '16px',
           color: '#fff8e1',
           align: 'left',
@@ -234,7 +267,8 @@ export class CombatScene extends Phaser.Scene {
   private makeButton(x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.Text {
     const btn = this.add
       .text(x, y, label, {
-        fontFamily: 'Trebuchet MS, sans-serif',
+        fontFamily: UI_FONT,
+          fontStyle: '700',
         fontSize: '20px',
         color: '#1b1b1b',
         backgroundColor: '#a5d6a7',
@@ -319,12 +353,16 @@ export class CombatScene extends Phaser.Scene {
         this.enemyViews.set(e.id, view);
       }
       view.root.setPosition(e.x, e.y);
-      view.root.setDepth(10 + Math.floor(e.y / 10));
+      const arenaH = this.run.getArena().height;
+      const ySort = Math.min(
+        DEPTH.enemySpan,
+        Math.max(0, Math.floor((e.y / arenaH) * DEPTH.enemySpan)),
+      );
+      view.root.setDepth(DEPTH.enemyBase + ySort);
       const hpRatio = Math.max(0, e.hp / e.maxHp);
-      view.hpBar.width = 28 * hpRatio;
-      view.hpBar.setFillStyle(hpRatio > 0.35 ? 0x66bb6a : 0xef5350);
-      view.sprite.setTint(e.hitFlash > 0 ? 0xffffff : 0xffffff);
-      view.sprite.setAlpha(e.hitFlash > 0 ? 0.7 : 1);
+      view.hpBar.width = 32 * hpRatio;
+      view.hpBar.setFillStyle(hpRatio > 0.35 ? 0x00e676 : 0xff1744);
+      view.sprite.setAlpha(e.hitFlash > 0 ? 0.65 : 1);
       view.windup.setVisible(e.state === 'winding_up');
       if (e.state === 'winding_up') {
         const t = 1 - e.windupRemaining / (e.def.attackWindupMs / 1000);
@@ -344,7 +382,9 @@ export class CombatScene extends Phaser.Scene {
       projIds.add(p.id);
       let view = this.projectileViews.get(p.id);
       if (!view) {
-        const sprite = this.add.image(p.x, p.y, p.crit ? 'arrow_crit' : 'arrow').setDepth(15);
+        const sprite = this.add
+          .image(p.x, p.y, p.crit ? 'arrow_crit' : 'arrow')
+          .setDepth(DEPTH.projectile);
         view = { sprite };
         this.projectileViews.set(p.id, view);
       }
@@ -368,10 +408,11 @@ export class CombatScene extends Phaser.Scene {
           ? 'enemy_raider_captain'
           : 'enemy_grunt';
     const sprite = this.add.image(0, 0, key);
-    const hpBarBg = this.add.rectangle(0, -sprite.height * 0.55, 28, 5, 0x222222);
-    const hpBar = this.add.rectangle(-14, -sprite.height * 0.55, 28, 5, 0x66bb6a).setOrigin(0, 0.5);
+    const barY = -sprite.height * 0.58;
+    const hpBarBg = this.add.rectangle(0, barY, 32, 6, 0x111111).setStrokeStyle(1, 0xffffff, 0.35);
+    const hpBar = this.add.rectangle(-16, barY, 32, 6, 0x00e676).setOrigin(0, 0.5);
     const windup = this.add
-      .arc(0, 0, sprite.width * 0.55, 0, 0, false, 0xff7043, 0.35)
+      .arc(0, 0, sprite.width * 0.55, 0, 0, false, 0xff6d00, 0.45)
       .setVisible(false);
     const root = this.add.container(0, 0, [windup, sprite, hpBarBg, hpBar]);
     return { root, sprite, hpBarBg, hpBar, windup };
@@ -418,7 +459,8 @@ export class CombatScene extends Phaser.Scene {
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
     const title = this.add
       .text(width / 2, height * 0.18, 'LEVEL UP — Choose 1', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: UI_FONT_TITLE,
+        fontStyle: '800',
         fontSize: '32px',
         color: '#fffde7',
       })
@@ -440,14 +482,16 @@ export class CombatScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
       const name = this.add
         .text(width / 2, y - 22, up.name, {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+          fontStyle: '700',
           fontSize: '22px',
           color: '#e8f5e9',
         })
         .setOrigin(0.5);
       const desc = this.add
         .text(width / 2, y + 16, up.description, {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+          fontStyle: '700',
           fontSize: '14px',
           color: '#c8e6c9',
           align: 'center',
@@ -473,7 +517,8 @@ export class CombatScene extends Phaser.Scene {
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
     const title = this.add
       .text(width / 2, height * 0.32, victory ? 'VICTORY' : 'DEFEAT', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: UI_FONT_TITLE,
+        fontStyle: '800',
         fontSize: '48px',
         color: victory ? '#c8e6c9' : '#ffcdd2',
       })
@@ -486,7 +531,8 @@ export class CombatScene extends Phaser.Scene {
           ? `Tower HP remaining: ${Math.ceil(towerHp)}\nTime: ${formatTime(elapsedMs)}`
           : `The tower fell at ${formatTime(elapsedMs)}`,
         {
-          fontFamily: 'Trebuchet MS, sans-serif',
+          fontFamily: UI_FONT,
+          fontStyle: '700',
           fontSize: '18px',
           color: '#eeeeee',
           align: 'center',
